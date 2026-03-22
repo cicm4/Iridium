@@ -1,0 +1,49 @@
+//
+//  MenuBarPopoverView.swift
+//  Iridium
+//
+
+import SwiftUI
+
+struct MenuBarPopoverView: View {
+    @Environment(AppCoordinator.self) private var coordinator
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Image(systemName: "sparkle")
+                    .foregroundStyle(.tint)
+                Text("Iridium")
+                    .font(.headline)
+                Spacer()
+                Toggle("", isOn: Bindable(coordinator.settings).isEnabled)
+                    .toggleStyle(.switch)
+                    .labelsHidden()
+            }
+
+            Divider()
+
+            if coordinator.isRunning {
+                Label("Active", systemImage: "circle.fill")
+                    .foregroundStyle(.green)
+                    .font(.callout)
+            } else {
+                Label("Paused", systemImage: "pause.circle")
+                    .foregroundStyle(.secondary)
+                    .font(.callout)
+            }
+
+            Divider()
+
+            Button("Settings...") {
+                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            }
+
+            Button("Quit Iridium") {
+                NSApp.terminate(nil)
+            }
+        }
+        .padding()
+        .frame(width: 280)
+    }
+}

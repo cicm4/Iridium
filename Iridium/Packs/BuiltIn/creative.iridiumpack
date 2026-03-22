@@ -1,0 +1,23 @@
+{
+  "id": "com.iridium.creative",
+  "name": "Creative",
+  "version": "1.0.0",
+  "author": "Iridium",
+  "description": "Suggests design and creative apps for images and evening workflows",
+  "triggers": [
+    {
+      "signal": "clipboard.contentType",
+      "matches": "image",
+      "confidence": 0.90,
+      "suggest": ["com.apple.Preview", "com.figma.Desktop", "com.adobe.Photoshop"]
+    },
+    {
+      "conditions": [
+        { "signal": "clipboard.contentType", "matches": "image" },
+        { "signal": "time.hourOfDay", "matches": { "gte": 18, "lte": 23 } }
+      ],
+      "confidence": 0.85,
+      "suggest": ["com.figma.Desktop", "com.adobe.Illustrator", "com.apple.garageband"]
+    }
+  ]
+}
