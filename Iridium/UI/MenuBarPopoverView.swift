@@ -7,6 +7,7 @@ import SwiftUI
 
 struct MenuBarPopoverView: View {
     @Environment(AppCoordinator.self) private var coordinator
+    @Environment(\.openSettings) private var openSettings
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -43,8 +44,7 @@ struct MenuBarPopoverView: View {
             Divider()
 
             Button("Settings...") {
-                NSApp.activate()
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                openSettings()
             }
 
             Button("Quit Iridium") {
