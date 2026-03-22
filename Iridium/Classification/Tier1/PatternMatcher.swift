@@ -83,10 +83,11 @@ struct PatternMatcher: Sendable {
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
 
-            // Swift
-            if trimmed.hasPrefix("func ") || trimmed.hasPrefix("let ") || trimmed.hasPrefix("var ")
+            // Swift (exclude "let mut" which is Rust)
+            if trimmed.hasPrefix("func ") || (trimmed.hasPrefix("let ") && !trimmed.hasPrefix("let mut "))
+                || trimmed.hasPrefix("var ")
                 || trimmed.hasPrefix("guard ") || trimmed.hasPrefix("import Swift")
-                || trimmed.contains("-> ") || trimmed.hasPrefix("struct ")
+                || (trimmed.contains("-> ") && !trimmed.contains("fn ")) || trimmed.hasPrefix("struct ")
                 || trimmed.hasPrefix("@Observable") || trimmed.hasPrefix("@MainActor")
             {
                 scores[.swift, default: 0] += 2
@@ -167,9 +168,14 @@ struct PatternMatcher: Sendable {
             }
 
             // SQL
-            if trimmed.uppercased().hasPrefix("SELECT ") || trimmed.uppercased().hasPrefix("INSERT ")
-                || trimmed.uppercased().hasPrefix("CREATE TABLE")
-                || trimmed.uppercased().hasPrefix("ALTER ")
+            let upper = trimmed.uppercased()
+            if upper.hasPrefix("SELECT ") || upper.hasPrefix("INSERT ")
+                || upper.hasPrefix("CREATE TABLE") || upper.hasPrefix("ALTER ")
+                || upper.hasPrefix("FROM ") || upper.hasPrefix("WHERE ")
+                || upper.hasPrefix("INNER JOIN") || upper.hasPrefix("LEFT JOIN")
+                || upper.hasPrefix("RIGHT JOIN") || upper.hasPrefix("ORDER BY")
+                || upper.hasPrefix("GROUP BY") || upper.hasPrefix("UPDATE ")
+                || upper.hasPrefix("DELETE FROM")
             {
                 scores[.sql, default: 0] += 2
             }

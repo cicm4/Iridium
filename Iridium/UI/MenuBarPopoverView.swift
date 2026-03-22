@@ -20,6 +20,13 @@ struct MenuBarPopoverView: View {
                     .toggleStyle(.switch)
                     .labelsHidden()
             }
+            .onChange(of: coordinator.settings.isEnabled) { _, newValue in
+                if newValue {
+                    coordinator.start()
+                } else {
+                    coordinator.stop()
+                }
+            }
 
             Divider()
 
@@ -36,6 +43,7 @@ struct MenuBarPopoverView: View {
             Divider()
 
             Button("Settings...") {
+                NSApp.activate()
                 NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
             }
 

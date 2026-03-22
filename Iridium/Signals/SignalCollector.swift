@@ -12,20 +12,23 @@ final class SignalCollector {
     private let appActivityMonitor: AppActivityMonitor
     private let timeProvider: TimeSignalProvider
     private let displayProvider: DisplaySignalProvider
-    private let focusProvider: FocusModeProvider
+    private let focusProvider: any FocusModeProviding
 
     private var continuation: AsyncStream<ContextSignal>.Continuation?
     private(set) var signalStream: AsyncStream<ContextSignal>?
 
     init(
         clipboardMonitor: ClipboardMonitor = ClipboardMonitor(),
-        appActivityMonitor: AppActivityMonitor = AppActivityMonitor()
+        appActivityMonitor: AppActivityMonitor = AppActivityMonitor(),
+        timeProvider: TimeSignalProvider = TimeSignalProvider(),
+        displayProvider: DisplaySignalProvider = DisplaySignalProvider(),
+        focusProvider: any FocusModeProviding = FocusModeProvider()
     ) {
         self.clipboardMonitor = clipboardMonitor
         self.appActivityMonitor = appActivityMonitor
-        self.timeProvider = TimeSignalProvider()
-        self.displayProvider = DisplaySignalProvider()
-        self.focusProvider = FocusModeProvider()
+        self.timeProvider = timeProvider
+        self.displayProvider = displayProvider
+        self.focusProvider = focusProvider
     }
 
     func start() -> AsyncStream<ContextSignal> {

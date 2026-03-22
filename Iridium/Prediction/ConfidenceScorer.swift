@@ -18,7 +18,11 @@ struct ConfidenceScorer: Sendable {
         score += interactionBoost
 
         // Apply freshness decay: suggestions become less relevant over time
-        let ageSeconds = Double(signalAge.components.seconds)
+        // Use total seconds including fractional component for accuracy
+        let totalNanoseconds = Double(signalAge.components.seconds) * 1_000_000_000
+            + Double(signalAge.components.attoseconds) / 1_000_000_000
+        let ageSeconds = totalNanoseconds / 1_000_000_000
+
         if ageSeconds > 2.0 {
             let decayFactor = max(0.5, 1.0 - (ageSeconds - 2.0) / 30.0)
             score *= decayFactor

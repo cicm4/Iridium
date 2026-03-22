@@ -17,6 +17,7 @@ final class AppCoordinator {
     let predictionEngine = PredictionEngine()
     let panelViewModel = SuggestionPanelViewModel()
     let accessibilityManager = AccessibilityManager()
+    let windowManager = WindowManager()
 
     private var signalCollector: SignalCollector?
     private var signalProcessingTask: Task<Void, Never>?
@@ -28,6 +29,9 @@ final class AppCoordinator {
     func start() {
         guard !isRunning else { return }
         isRunning = true
+
+        // Check accessibility permission for window management
+        accessibilityManager.checkPermission()
 
         // Load packs
         packRegistry.enabledPackIDs = settings.enabledPackIDs
@@ -54,6 +58,9 @@ final class AppCoordinator {
         // Start prediction engine
         let resultStream = predictionEngine.start()
 
+        // Start window manager (degrades gracefully if no accessibility)
+        windowManager.start(accessibilityGranted: accessibilityManager.isAccessibilityGranted)
+
         // Process signals
         signalProcessingTask = Task {
             for await signal in signalStream {
@@ -72,7 +79,7 @@ final class AppCoordinator {
             }
         }
 
-        Logger.app.info("Iridium started")
+        Logger.app.info("Iridium started (accessibility: \(self.accessibilityManager.isAccessibilityGranted))")
     }
 
     func stop() {
@@ -83,6 +90,7 @@ final class AppCoordinator {
         resultProcessingTask?.cancel()
         signalCollector?.stop()
         predictionEngine.stop()
+        windowManager.stop()
         panelViewModel.dismiss()
         hidePanel()
 
@@ -108,11 +116,14 @@ final class AppCoordinator {
 
         guard let window = panelWindow else { return }
 
-        // Position the panel based on user preference
-        positionPanel(window)
-
         window.alphaValue = 0
         window.orderFrontRegardless()
+
+        // Layout pass to get correct content size before positioning
+        window.layoutIfNeeded()
+
+        // Position the panel based on user preference
+        positionPanel(window)
 
         // Fade in
         NSAnimationContext.runAnimationGroup { context in
@@ -135,26 +146,27 @@ final class AppCoordinator {
     private func positionPanel(_ window: NSWindow) {
         guard let screen = NSScreen.main else { return }
         let screenFrame = screen.visibleFrame
+        let panelSize = window.frame.size
 
+        let origin: NSPoint
         switch settings.suggestionPosition {
         case .nearCursor:
             let mouseLocation = NSEvent.mouseLocation
-            let panelSize = window.frame.size
             let x = min(mouseLocation.x, screenFrame.maxX - panelSize.width)
             let y = max(mouseLocation.y - panelSize.height - 10, screenFrame.minY)
-            window.setFrameOrigin(NSPoint(x: x, y: y))
+            origin = NSPoint(x: x, y: y)
 
         case .topRight:
-            let panelSize = window.frame.size
             let x = screenFrame.maxX - panelSize.width - 16
             let y = screenFrame.maxY - panelSize.height - 16
-            window.setFrameOrigin(NSPoint(x: x, y: y))
+            origin = NSPoint(x: x, y: y)
 
         case .bottomRight:
-            let panelSize = window.frame.size
             let x = screenFrame.maxX - panelSize.width - 16
             let y = screenFrame.minY + 16
-            window.setFrameOrigin(NSPoint(x: x, y: y))
+            origin = NSPoint(x: x, y: y)
         }
+
+        window.setFrameOrigin(origin)
     }
 }

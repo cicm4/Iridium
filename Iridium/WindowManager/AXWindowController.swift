@@ -15,35 +15,44 @@ struct AXWindowController: Sendable {
         var focusedWindow: CFTypeRef?
         let result = AXUIElementCopyAttributeValue(appElement, kAXFocusedWindowAttribute as CFString, &focusedWindow)
 
-        guard result == .success else {
+        guard result == .success, let window = focusedWindow else {
             Logger.windowManager.debug("Cannot get focused window for \(app.bundleIdentifier ?? "unknown"): \(result.rawValue)")
             return nil
         }
 
-        return (focusedWindow as! AXUIElement)
+        // Safe cast — AXUIElementCopyAttributeValue for focused window returns AXUIElement
+        return (window as AnyObject as! AXUIElement)
     }
 
     /// Gets the current position of a window.
     static func getPosition(of window: AXUIElement) -> CGPoint? {
         var positionValue: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(window, kAXPositionAttribute as CFString, &positionValue) == .success else {
+        guard AXUIElementCopyAttributeValue(window, kAXPositionAttribute as CFString, &positionValue) == .success,
+              let axValue = positionValue else {
             return nil
         }
 
         var point = CGPoint.zero
-        guard AXValueGetValue(positionValue as! AXValue, .cgPoint, &point) else { return nil }
+        guard CFGetTypeID(axValue) == AXValueGetTypeID(),
+              AXValueGetValue(axValue as! AXValue, .cgPoint, &point) else {
+            return nil
+        }
         return point
     }
 
     /// Gets the current size of a window.
     static func getSize(of window: AXUIElement) -> CGSize? {
         var sizeValue: CFTypeRef?
-        guard AXUIElementCopyAttributeValue(window, kAXSizeAttribute as CFString, &sizeValue) == .success else {
+        guard AXUIElementCopyAttributeValue(window, kAXSizeAttribute as CFString, &sizeValue) == .success,
+              let axValue = sizeValue else {
             return nil
         }
 
         var size = CGSize.zero
-        guard AXValueGetValue(sizeValue as! AXValue, .cgSize, &size) else { return nil }
+        guard CFGetTypeID(axValue) == AXValueGetTypeID(),
+              AXValueGetValue(axValue as! AXValue, .cgSize, &size) else {
+            return nil
+        }
         return size
     }
 

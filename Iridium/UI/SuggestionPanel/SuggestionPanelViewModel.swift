@@ -59,15 +59,16 @@ final class SuggestionPanelViewModel {
     }
 
     func selectCurrent() {
-        guard selectedIndex < suggestions.count else { return }
+        guard !suggestions.isEmpty, selectedIndex >= 0, selectedIndex < suggestions.count else { return }
         let suggestion = suggestions[selectedIndex]
         AppLauncher.launch(bundleID: suggestion.bundleID)
         onSelection?(suggestion.bundleID)
         dismiss()
     }
 
+    /// Called when the user clicks a specific suggestion row.
     func selectAtIndex(_ index: Int) {
-        guard index < suggestions.count else { return }
+        guard index >= 0, index < suggestions.count else { return }
         selectedIndex = index
         selectCurrent()
     }
