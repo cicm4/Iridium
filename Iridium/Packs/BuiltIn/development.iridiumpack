@@ -1,0 +1,39 @@
+{
+  "id": "com.iridium.development",
+  "name": "Development",
+  "version": "1.0.0",
+  "author": "Iridium",
+  "description": "Suggests IDEs and development tools when code is copied",
+  "triggers": [
+    {
+      "signal": "clipboard.contentType",
+      "matches": "code",
+      "confidence": 0.90,
+      "suggest": ["com.apple.dt.Xcode", "com.microsoft.VSCode", "com.jetbrains.intellij"]
+    },
+    {
+      "conditions": [
+        { "signal": "clipboard.contentType", "matches": "code" },
+        { "signal": "clipboard.language", "matches": "swift" }
+      ],
+      "confidence": 0.95,
+      "suggest": ["com.apple.dt.Xcode", "com.apple.dt.Xcode-Playground"]
+    },
+    {
+      "conditions": [
+        { "signal": "clipboard.contentType", "matches": "code" },
+        { "signal": "clipboard.language", "matches": "python" }
+      ],
+      "confidence": 0.95,
+      "suggest": ["com.jetbrains.pycharm", "com.microsoft.VSCode"]
+    },
+    {
+      "conditions": [
+        { "signal": "clipboard.contentType", "matches": "code" },
+        { "signal": "clipboard.language", "matches": ["javascript", "typescript"] }
+      ],
+      "confidence": 0.95,
+      "suggest": ["com.microsoft.VSCode", "com.webstorm"]
+    }
+  ]
+}

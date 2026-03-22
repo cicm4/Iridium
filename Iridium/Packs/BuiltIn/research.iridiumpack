@@ -1,0 +1,29 @@
+{
+  "id": "com.iridium.research",
+  "name": "Research",
+  "version": "1.0.0",
+  "author": "Iridium",
+  "description": "Suggests browsers and writing apps for URLs and prose",
+  "triggers": [
+    {
+      "signal": "clipboard.contentType",
+      "matches": "url",
+      "confidence": 0.90,
+      "suggest": ["com.apple.Safari", "com.google.Chrome", "org.mozilla.firefox"]
+    },
+    {
+      "signal": "clipboard.contentType",
+      "matches": "prose",
+      "confidence": 0.80,
+      "suggest": ["com.apple.TextEdit", "com.apple.Notes", "md.obsidian"]
+    },
+    {
+      "conditions": [
+        { "signal": "clipboard.contentType", "matches": "prose" },
+        { "signal": "app.frontmost", "matches": ["com.apple.Safari", "com.google.Chrome"] }
+      ],
+      "confidence": 0.85,
+      "suggest": ["com.apple.Notes", "md.obsidian", "com.notion.Notion"]
+    }
+  ]
+}
