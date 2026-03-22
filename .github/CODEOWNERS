@@ -1,0 +1,11 @@
+# Global owner — reviews required on all PRs
+* @cicm
+
+# Behavior packs — community submissions welcome but reviewed by maintainer
+/Packs/ @cicm
+
+# Security-sensitive paths — extra scrutiny required
+/Iridium/Prediction/ @cicm
+/Iridium/Clipboard/ @cicm
+SECURITY.md @cicm
+docs/privacy.md @cicm

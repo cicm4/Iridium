@@ -1,0 +1,71 @@
+name: Behavior Pack Submission
+description: Submit a community behavior pack for inclusion in the built-in registry
+labels: ["behavior-pack", "needs-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template to submit a new behavior pack for the built-in Iridium pack registry.
+        Read the [Behavior Pack Authoring Guide](../../docs/behavior-packs.md) before submitting.
+
+  - type: input
+    id: pack-id
+    attributes:
+      label: Pack ID
+      placeholder: "com.example.my-pack"
+    validations:
+      required: true
+
+  - type: input
+    id: pack-name
+    attributes:
+      label: Pack Name
+      placeholder: "My Pack"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Pack Description
+      description: What workflows does this pack improve?
+    validations:
+      required: true
+
+  - type: textarea
+    id: signals
+    attributes:
+      label: Signals Used
+      description: List the context signals your pack uses.
+      placeholder: |
+        - clipboard.contentType: code
+        - clipboard.language: python
+    validations:
+      required: true
+
+  - type: textarea
+    id: apps
+    attributes:
+      label: Suggested Applications
+      description: List the apps your pack suggests with their bundle IDs.
+      placeholder: |
+        - PyCharm (com.jetbrains.pycharm)
+        - VS Code (com.microsoft.VSCode)
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Submission Checklist
+      options:
+        - label: Pack file is valid JSON and passes schema validation.
+          required: true
+        - label: All app bundle IDs are accurate.
+          required: true
+        - label: Confidence scores are reasonable (not all 1.0).
+          required: true
+        - label: Pack does not conflict with existing built-in packs.
+          required: true
+        - label: I understand packs run sandboxed with no raw clipboard data access.
+          required: true

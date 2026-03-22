@@ -1,0 +1,79 @@
+name: Bug Report
+description: Report a bug in Iridium
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. Please fill out the fields below.
+
+        **Important:** Do not include clipboard contents, file paths, or any personal data in this report.
+
+  - type: input
+    id: iridium-version
+    attributes:
+      label: Iridium Version
+      placeholder: "e.g. 1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: macos-version
+    attributes:
+      label: macOS Version
+      placeholder: "e.g. macOS 14.4 Sonoma"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear description of what the bug is.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Step-by-step instructions to reproduce the issue.
+      placeholder: |
+        1. Open Iridium
+        2. Copy some text
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Console Output (Optional)
+      description: |
+        Paste any relevant output from Console.app.
+        **Remove any personal information before pasting.**
+      render: text
+
+  - type: checkboxes
+    id: privacy-confirmation
+    attributes:
+      label: Privacy Confirmation
+      options:
+        - label: I have not included any clipboard contents, file paths, or personal data in this report.
+          required: true
