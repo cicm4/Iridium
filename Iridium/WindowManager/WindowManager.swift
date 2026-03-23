@@ -43,6 +43,9 @@ final class WindowManager {
         guard let frame = frames.first else { return }
 
         let success = AXWindowController.setFrame(of: window, to: frame)
+        if success {
+            ToastManager.shared.show("Window snapped to \(preset.name)", icon: "rectangle.split.2x1")
+        }
         Logger.windowManager.debug("Applied preset '\(preset.name)': \(success ? "success" : "failed")")
     }
 

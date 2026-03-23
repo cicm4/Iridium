@@ -48,6 +48,13 @@ final class HotkeyManager {
         return id
     }
 
+    func unregisterHotkey(id: UInt32) {
+        if let ref = hotKeyRefs.removeValue(forKey: id) {
+            UnregisterEventHotKey(ref)
+        }
+        registeredHotkeys.removeValue(forKey: id)
+    }
+
     func unregisterAll() {
         for (_, ref) in hotKeyRefs {
             UnregisterEventHotKey(ref)

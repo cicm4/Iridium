@@ -15,6 +15,9 @@ struct ConfidenceBadge: View {
             .padding(.horizontal, 4)
             .padding(.vertical, 1)
             .background(color.opacity(0.1), in: Capsule())
+            .accessibilityIdentifier(AccessibilityID.ConfidenceBadge.badge)
+            .accessibilityLabel("\(Int(confidence * 100)) percent confidence")
+            .accessibilityValue("\(Int(confidence * 100))")
     }
 
     private var color: Color {

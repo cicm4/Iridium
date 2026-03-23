@@ -63,6 +63,9 @@ final class TaskStore: @unchecked Sendable {
 
         save()
         Logger.learning.info("Started task: '\(description)' with \(categories.count) category weights")
+        await MainActor.run {
+            ToastManager.shared.show("Task started: \(description)", icon: "target")
+        }
     }
 
     /// Stops the active task.
@@ -73,9 +76,13 @@ final class TaskStore: @unchecked Sendable {
             taskHistory[index].isActive = false
         }
 
+        let taskName = task.name
         activeTask = nil
         save()
-        Logger.learning.info("Stopped task: '\(task.name)'")
+        Logger.learning.info("Stopped task: '\(taskName)'")
+        Task { @MainActor in
+            ToastManager.shared.show("Task ended: \(taskName)", icon: "checkmark.circle")
+        }
     }
 
     /// Resumes a task from history.

@@ -39,6 +39,8 @@ struct TaskModeView: View {
                 }
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier(AccessibilityID.TaskMode.header)
+            .accessibilityLabel(taskStore.activeTask != nil ? "Task Mode, active: \(taskStore.activeTask!.name)" : "Task Mode, no active task")
 
             if isExpanded {
                 if let task = taskStore.activeTask {
@@ -57,6 +59,7 @@ struct TaskModeView: View {
                         }
                         .buttonStyle(.bordered)
                         .controlSize(.small)
+                        .accessibilityIdentifier(AccessibilityID.TaskMode.stopButton)
                     }
                     .padding(.vertical, 4)
                 } else {
@@ -65,6 +68,7 @@ struct TaskModeView: View {
                         TextField("What are you working on?", text: $taskDescription)
                             .textFieldStyle(.roundedBorder)
                             .controlSize(.small)
+                            .accessibilityIdentifier(AccessibilityID.TaskMode.taskInput)
                             .onSubmit {
                                 startTask()
                             }
@@ -74,6 +78,7 @@ struct TaskModeView: View {
                         .buttonStyle(.borderedProminent)
                         .controlSize(.small)
                         .disabled(taskDescription.trimmingCharacters(in: .whitespaces).isEmpty)
+                        .accessibilityIdentifier(AccessibilityID.TaskMode.startButton)
                     }
                 }
 

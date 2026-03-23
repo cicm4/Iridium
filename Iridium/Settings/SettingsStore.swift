@@ -35,9 +35,15 @@ final class SettingsStore {
         self.enablePredictiveWorkspace = defaults.object(forKey: Keys.enablePredictiveWorkspace) as? Bool ?? true
         self.enableScreenOCR = defaults.object(forKey: Keys.enableScreenOCR) as? Bool ?? false
         self.hasCompletedWorkspaceMigration = defaults.object(forKey: Keys.hasCompletedWorkspaceMigration) as? Bool ?? false
+        self.hasCompletedOnboarding = defaults.object(forKey: Keys.hasCompletedOnboarding) as? Bool ?? false
 
         if let ids = defaults.stringArray(forKey: Keys.enabledPackIDs) {
             self.enabledPackIDs = Set(ids)
+        }
+
+        if let data = defaults.data(forKey: Keys.hotkeyBindings),
+           let decoded = try? JSONDecoder().decode([HotkeyBinding].self, from: data) {
+            self.hotkeyBindings = decoded
         }
     }
 
@@ -101,8 +107,34 @@ final class SettingsStore {
         didSet { defaults.set(hasCompletedWorkspaceMigration, forKey: Keys.hasCompletedWorkspaceMigration) }
     }
 
+    var hasCompletedOnboarding: Bool {
+        didSet { defaults.set(hasCompletedOnboarding, forKey: Keys.hasCompletedOnboarding) }
+    }
+
     var enabledPackIDs: Set<String> = [] {
         didSet { defaults.set(Array(enabledPackIDs), forKey: Keys.enabledPackIDs) }
+    }
+
+    var hotkeyBindings: [HotkeyBinding] = HotkeyAction.allCases.map(\.defaultBinding) {
+        didSet {
+            if let data = try? JSONEncoder().encode(hotkeyBindings) {
+                defaults.set(data, forKey: Keys.hotkeyBindings)
+            }
+        }
+    }
+
+    func binding(for action: HotkeyAction) -> HotkeyBinding {
+        hotkeyBindings.first { $0.action == action } ?? action.defaultBinding
+    }
+
+    func updateBinding(for action: HotkeyAction, keyCode: UInt32, modifiers: UInt32) {
+        if let index = hotkeyBindings.firstIndex(where: { $0.action == action }) {
+            hotkeyBindings[index] = HotkeyBinding(action: action, keyCode: keyCode, modifiers: modifiers)
+        }
+    }
+
+    func conflictingAction(keyCode: UInt32, modifiers: UInt32, excluding: HotkeyAction) -> HotkeyAction? {
+        hotkeyBindings.first { $0.action != excluding && $0.keyCode == keyCode && $0.modifiers == modifiers }?.action
     }
 
     private enum Keys {
@@ -121,6 +153,8 @@ final class SettingsStore {
         static let enablePredictiveWorkspace = "enablePredictiveWorkspace"
         static let enableScreenOCR = "enableScreenOCR"
         static let hasCompletedWorkspaceMigration = "hasCompletedWorkspaceMigration"
+        static let hasCompletedOnboarding = "hasCompletedOnboarding"
         static let enabledPackIDs = "enabledPackIDs"
+        static let hotkeyBindings = "hotkeyBindings"
     }
 }
