@@ -23,6 +23,9 @@ final class AppCoordinator {
     private var signalProcessingTask: Task<Void, Never>?
     private var resultProcessingTask: Task<Void, Never>?
     private var panelWindow: SuggestionPanelWindow?
+    /// Incremented each time showPanel/hidePanel is called.
+    /// hidePanel's completion handler checks this to avoid stale orderOut.
+    private var panelShowHideGeneration: Int = 0
 
     private(set) var isRunning = false
 
@@ -144,7 +147,13 @@ final class AppCoordinator {
 
         guard let window = panelWindow else { return }
 
+        // Increment generation so any in-flight hidePanel completion is invalidated
+        panelShowHideGeneration += 1
+
+        // Cancel any in-progress hide animation — snap to visible
+        window.animator().alphaValue = 1.0
         window.alphaValue = 0
+
         window.orderFrontRegardless()
 
         // Make the panel key so it receives keyboard events (arrow keys, enter, escape)
@@ -166,10 +175,15 @@ final class AppCoordinator {
     func hidePanel() {
         guard let window = panelWindow else { return }
 
+        panelShowHideGeneration += 1
+        let hideGeneration = panelShowHideGeneration
+
         NSAnimationContext.runAnimationGroup({ context in
             context.duration = 0.2
             window.animator().alphaValue = 0
-        }, completionHandler: {
+        }, completionHandler: { [weak self] in
+            // Only orderOut if no new show/hide has happened since we started
+            guard let self, self.panelShowHideGeneration == hideGeneration else { return }
             window.orderOut(nil)
         })
     }

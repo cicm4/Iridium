@@ -1,9 +1,9 @@
 {
   "id": "com.iridium.research",
   "name": "Research",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Iridium",
-  "description": "Suggests browsers and writing apps for URLs and prose",
+  "description": "Suggests browsers for URLs and productivity apps for prose",
   "triggers": [
     {
       "signal": "clipboard.contentType",
@@ -15,7 +15,7 @@
       "signal": "clipboard.contentType",
       "matches": "prose",
       "confidence": 0.80,
-      "suggest": ["com.apple.TextEdit", "com.apple.Notes", "md.obsidian"]
+      "suggest": ["com.apple.Pages", "com.microsoft.Word", "com.apple.Notes"]
     },
     {
       "conditions": [
