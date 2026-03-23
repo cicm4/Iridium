@@ -18,6 +18,9 @@ final class PredictionEngine {
     private var packRegistry: PackRegistry?
     private var settings: SettingsStore?
     var appPreferences: AppPreferences?
+    var adaptiveWeightStore: AdaptiveWeightStore?
+    var installedAppRegistry: InstalledAppRegistry?
+    var taskStore: TaskStore?
 
     private var resultContinuation: AsyncStream<SuggestionResult>.Continuation?
     private(set) var resultStream: AsyncStream<SuggestionResult>?
@@ -81,15 +84,23 @@ final class PredictionEngine {
         }
 
         // Get currently running apps for prioritization
-        let runningApps = Set(
-            NSWorkspace.shared.runningApplications
-                .filter { $0.activationPolicy == .regular }
-                .compactMap(\.bundleIdentifier)
-        )
+        let runningApps: Set<String>
+        if let registry = installedAppRegistry {
+            runningApps = registry.runningAppBundleIDs
+        } else {
+            runningApps = Set(
+                NSWorkspace.shared.runningApplications
+                    .filter { $0.activationPolicy == .regular }
+                    .compactMap(\.bundleIdentifier)
+            )
+        }
 
         // Get user preferences
         let excludedBundleIDs = appPreferences?.excludedBundleIDs ?? []
         let pinnedBundleIDs = appPreferences?.pinnedBundleIDs ?? []
+
+        // Update interaction tracker with current content type for adaptive learning
+        interactionTracker.lastContentType = enrichedSignal.contentType
 
         // Rank and deduplicate, prioritizing running apps
         let ranked = ranker.rank(
@@ -98,12 +109,21 @@ final class PredictionEngine {
             interactionTracker: interactionTracker,
             runningAppBundleIDs: runningApps,
             excludedBundleIDs: excludedBundleIDs,
-            pinnedBundleIDs: pinnedBundleIDs
+            pinnedBundleIDs: pinnedBundleIDs,
+            adaptiveWeightStore: adaptiveWeightStore,
+            contentType: enrichedSignal.contentType,
+            taskContext: taskStore?.activeTask,
+            installedAppRegistry: installedAppRegistry
         )
 
         // Filter out apps that are not installed on this machine
-        let installed = ranked.filter { suggestion in
-            NSWorkspace.shared.urlForApplication(withBundleIdentifier: suggestion.bundleID) != nil
+        let installed: [Suggestion]
+        if let registry = installedAppRegistry, registry.isReady {
+            installed = ranked.filter { registry.isInstalled($0.bundleID) }
+        } else {
+            installed = ranked.filter { suggestion in
+                NSWorkspace.shared.urlForApplication(withBundleIdentifier: suggestion.bundleID) != nil
+            }
         }
 
         // Filter by confidence threshold

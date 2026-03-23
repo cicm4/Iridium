@@ -11,7 +11,7 @@ struct LayoutPreset: Codable, Identifiable, Sendable {
     var regions: [Region]
     var hotkey: String?
 
-    struct Region: Codable, Sendable {
+    struct Region: Codable, Sendable, Equatable {
         /// Fractional position and size relative to screen (0.0-1.0).
         var x: Double
         var y: Double

@@ -56,7 +56,31 @@ struct TriggerMatcher: Sendable {
             return .number(Double(context.hourOfDay))
         case "display.count":
             return .number(Double(context.displayCount))
+
+        // Phase 3: Enhanced signals
+        case "window.title":
+            return context.windowTitle.map { .string($0) }
+        case "screen.content":
+            return context.screenContentSample.map { .string($0) }
+        case "file.extensions":
+            return context.activeFileExtensions.map { .string($0.joined(separator: ",")) }
+        case "calendar.meetingSoon":
+            return context.upcomingMeetingInMinutes.map { .number(Double($0)) }
+        case "browser.domain":
+            return context.browserDomain.map { .string($0) }
+        case "browser.tabTitle":
+            return context.browserTabTitle.map { .string($0) }
+        case "clipboard.pattern":
+            return context.clipboardPatternHint.map { .string($0) }
         default:
+            // Phase 5: Integration signals (e.g., "todoist.dueToday", "obsidian.recentTopic")
+            if let value = context.integrationSignals?[signal] {
+                // Try to parse as number first
+                if let num = Double(value) {
+                    return .number(num)
+                }
+                return .string(value)
+            }
             return nil
         }
     }

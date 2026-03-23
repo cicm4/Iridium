@@ -40,6 +40,13 @@ struct MenuBarPopoverView: View {
                     .font(.callout)
             }
 
+            if coordinator.settings.enableTaskMode {
+                Divider()
+
+                TaskModeView()
+                    .environment(coordinator.taskStore)
+            }
+
             Divider()
 
             SettingsLink {

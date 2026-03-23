@@ -17,6 +17,9 @@ struct SuggestionRanker: Sendable {
     /// Boost applied to suggestions whose app is pinned by the user.
     static let pinnedAppBoost: Double = 0.25
 
+    /// Maximum boost from adaptive learning based on user history.
+    static let maxAdaptiveBoost: Double = 0.20
+
     /// Ranks, deduplicates, and caps suggestions.
     /// - Parameters:
     ///   - suggestions: Raw suggestions from pack evaluation.
@@ -26,13 +29,22 @@ struct SuggestionRanker: Sendable {
     ///     receive a ranking boost so the most relevant, already-open apps surface first.
     ///   - excludedBundleIDs: Bundle IDs the user has explicitly excluded from suggestions.
     ///   - pinnedBundleIDs: Bundle IDs the user has pinned to appear first.
+    ///   - adaptiveWeightStore: Persistent Bayesian weight store for learned preferences.
+    ///   - contentType: Content type of the current signal (for adaptive weight lookup).
+    /// Maximum multiplicative boost from active task context.
+    static let maxTaskMultiplier: Double = TaskContext.maxMultiplier
+
     func rank(
         suggestions: [Suggestion],
         signalTimestamp: ContinuousClock.Instant,
         interactionTracker: InteractionTracker,
         runningAppBundleIDs: Set<String> = [],
         excludedBundleIDs: Set<String> = [],
-        pinnedBundleIDs: Set<String> = []
+        pinnedBundleIDs: Set<String> = [],
+        adaptiveWeightStore: AdaptiveWeightStore? = nil,
+        contentType: ContentType? = nil,
+        taskContext: TaskContext? = nil,
+        installedAppRegistry: InstalledAppRegistry? = nil
     ) -> [Suggestion] {
         let now = ContinuousClock.now
         let signalAge = now - signalTimestamp
@@ -57,6 +69,18 @@ struct SuggestionRanker: Sendable {
             // Boost pinned apps
             if pinnedBundleIDs.contains(suggestion.bundleID) {
                 score += Self.pinnedAppBoost
+            }
+
+            // Adaptive learning boost (persistent user preference)
+            if let store = adaptiveWeightStore, let ct = contentType {
+                score += store.weight(for: suggestion.bundleID, contentType: ct)
+            }
+
+            // Task mode multiplicative boost
+            if let task = taskContext, let registry = installedAppRegistry {
+                let category = registry.category(for: suggestion.bundleID)
+                let multiplier = task.multiplier(for: category)
+                score *= multiplier
             }
 
             return (suggestion, score)

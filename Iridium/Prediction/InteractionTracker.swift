@@ -12,6 +12,12 @@ final class InteractionTracker {
     /// Resets on app quit. Never persisted unless user enables persistent learning.
     private(set) var selectionCounts: [String: Int] = [:]
 
+    /// Adaptive weight store for persistent learning. Set externally.
+    var adaptiveWeightStore: AdaptiveWeightStore?
+
+    /// Content type of the last signal, used for adaptive weight recording.
+    var lastContentType: ContentType?
+
     /// Consecutive dismissals without selection (for frequency capping).
     private(set) var consecutiveDismissals = 0
 
@@ -26,6 +32,12 @@ final class InteractionTracker {
         selectionCounts[bundleID, default: 0] += 1
         consecutiveDismissals = 0
         suppressionTimer?.cancel()
+
+        // Delegate to adaptive weight store for persistent learning
+        if let store = adaptiveWeightStore, let ct = lastContentType {
+            store.recordSelection(bundleID: bundleID, contentType: ct)
+        }
+
         Logger.prediction.debug("Recorded selection: \(bundleID) (total: \(self.selectionCounts[bundleID] ?? 0))")
     }
 

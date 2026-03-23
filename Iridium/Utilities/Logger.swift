@@ -15,4 +15,7 @@ extension Logger {
     static let prediction = Logger(subsystem: subsystem, category: "prediction")
     static let windowManager = Logger(subsystem: subsystem, category: "windowManager")
     static let ui = Logger(subsystem: subsystem, category: "ui")
+    static let learning = Logger(subsystem: subsystem, category: "learning")
+    static let taskMode = Logger(subsystem: subsystem, category: "taskMode")
+    static let integrations = Logger(subsystem: subsystem, category: "integrations")
 }

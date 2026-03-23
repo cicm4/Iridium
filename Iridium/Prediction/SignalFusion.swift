@@ -7,6 +7,7 @@ import Foundation
 
 struct SignalFusion: Sendable {
     /// Enriches a ContextSignal with classification results.
+    /// Preserves all Phase 3 enhanced signal fields.
     func enrich(
         signal: ContextSignal,
         classification: ClassificationResult
@@ -20,7 +21,15 @@ struct SignalFusion: Sendable {
             hourOfDay: signal.hourOfDay,
             displayCount: signal.displayCount,
             focusModeActive: signal.focusModeActive,
-            timestamp: signal.timestamp
+            timestamp: signal.timestamp,
+            windowTitle: signal.windowTitle,
+            screenContentSample: signal.screenContentSample,
+            activeFileExtensions: signal.activeFileExtensions,
+            upcomingMeetingInMinutes: signal.upcomingMeetingInMinutes,
+            browserDomain: signal.browserDomain,
+            browserTabTitle: signal.browserTabTitle,
+            clipboardPatternHint: signal.clipboardPatternHint,
+            integrationSignals: signal.integrationSignals
         )
     }
 }

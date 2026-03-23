@@ -19,6 +19,18 @@ final class AppCoordinator {
     let accessibilityManager = AccessibilityManager()
     let windowManager = WindowManager()
     let appPreferences = AppPreferences()
+    let installedAppRegistry = InstalledAppRegistry()
+    let adaptiveWeightStore: AdaptiveWeightStore
+    let taskStore = TaskStore()
+    let workspaceStore = WorkspaceStore()
+    let workspaceActivator = WorkspaceActivator()
+    let workspaceLearner = WorkspaceLearner()
+    let integrationRegistry = IntegrationRegistry()
+
+    nonisolated init() {
+        let persistence = LearningDataPersistence()
+        self.adaptiveWeightStore = AdaptiveWeightStore(persistence: persistence)
+    }
 
     private var signalCollector: SignalCollector?
     private var signalProcessingTask: Task<Void, Never>?
@@ -48,9 +60,45 @@ final class AppCoordinator {
         }
         packRegistry.enabledPackIDs = settings.enabledPackIDs
 
+        // Load adaptive weights if persistent learning is enabled
+        if settings.enablePersistentLearning {
+            adaptiveWeightStore.load()
+        }
+
+        // Scan installed apps in the background
+        Task.detached { [installedAppRegistry] in
+            installedAppRegistry.scan()
+        }
+        installedAppRegistry.startObservingLaunches()
+
         // Configure prediction engine
         predictionEngine.configure(packRegistry: packRegistry, settings: settings)
         predictionEngine.appPreferences = appPreferences
+        predictionEngine.adaptiveWeightStore = settings.enablePersistentLearning ? adaptiveWeightStore : nil
+        predictionEngine.installedAppRegistry = installedAppRegistry
+
+        // Wire adaptive learning into interaction tracker
+        predictionEngine.interactionTracker.adaptiveWeightStore = settings.enablePersistentLearning ? adaptiveWeightStore : nil
+
+        // Load task store and wire into prediction engine
+        if settings.enableTaskMode {
+            taskStore.load()
+            predictionEngine.taskStore = taskStore
+        }
+
+        // Load workspaces
+        workspaceStore.load()
+
+        // Register and start integrations
+        integrationRegistry.register(TodoistIntegration())
+        integrationRegistry.register(ObsidianIntegration())
+        integrationRegistry.register(NotionIntegration())
+        if let enabledIDs = settings.defaults.stringArray(forKey: "enabledIntegrationIDs") {
+            integrationRegistry.enabledIDs = Set(enabledIDs)
+        }
+        Task {
+            await integrationRegistry.startAll()
+        }
 
         // Configure panel
         panelViewModel.configure(
@@ -70,8 +118,13 @@ final class AppCoordinator {
             }
         )
 
-        // Start signal collection
+        // Start signal collection with enhanced providers
         let collector = SignalCollector()
+        collector.configureEnhancedProviders(
+            enableBrowserTabAnalysis: settings.enableBrowserTabAnalysis,
+            enableCalendarIntegration: settings.enableCalendarIntegration,
+            enableClipboardHistory: settings.enableClipboardHistory
+        )
         self.signalCollector = collector
         let signalStream = collector.start()
 
@@ -113,6 +166,8 @@ final class AppCoordinator {
         windowManager.stop()
         panelViewModel.dismiss()
         hidePanel()
+        installedAppRegistry.stopObservingLaunches()
+        Task { await integrationRegistry.stopAll() }
 
         signalProcessingTask = nil
         resultProcessingTask = nil
