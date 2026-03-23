@@ -22,6 +22,9 @@ final class AppCoordinator {
     let installedAppRegistry = InstalledAppRegistry()
     let adaptiveWeightStore: AdaptiveWeightStore
     let taskStore = TaskStore()
+    let workspaceStore = WorkspaceStore()
+    let workspaceActivator = WorkspaceActivator()
+    let workspaceLearner = WorkspaceLearner()
 
     nonisolated init() {
         let persistence = LearningDataPersistence()
@@ -81,6 +84,9 @@ final class AppCoordinator {
             taskStore.load()
             predictionEngine.taskStore = taskStore
         }
+
+        // Load workspaces
+        workspaceStore.load()
 
         // Configure panel
         panelViewModel.configure(
