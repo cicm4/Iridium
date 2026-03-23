@@ -46,6 +46,40 @@ struct GeneralSettingsView: View {
                 Toggle("Respect Focus Mode", isOn: $settings.respectFocusMode)
                     .help("Hide suggestions when Do Not Disturb or a Focus mode is active.")
             }
+
+            Section("Accessibility") {
+                HStack {
+                    if coordinator.accessibilityManager.isAccessibilityGranted {
+                        Label("Accessibility Granted", systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                    } else {
+                        Label("Accessibility Not Granted", systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                    }
+                    Spacer()
+                }
+
+                if !coordinator.accessibilityManager.isAccessibilityGranted {
+                    Text("Iridium needs accessibility permissions to manage windows and capture keyboard shortcuts.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                HStack {
+                    Button("Request Accessibility Permission") {
+                        coordinator.accessibilityManager.promptForPermission()
+                    }
+
+                    Button("Open System Settings") {
+                        coordinator.accessibilityManager.openAccessibilityPreferences()
+                    }
+                }
+
+                Button("Re-check Permission") {
+                    coordinator.accessibilityManager.checkPermission()
+                }
+                .buttonStyle(.link)
+            }
         }
         .formStyle(.grouped)
     }

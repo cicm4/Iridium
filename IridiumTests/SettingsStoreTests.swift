@@ -21,7 +21,7 @@ struct SettingsStoreTests {
         #expect(store.isEnabled == true)
         #expect(store.showSuggestions == true)
         #expect(store.suggestionPosition == .nearCursor)
-        #expect(store.autoDismissDelay == 4.0)
+        #expect(store.autoDismissDelay == 10.0)
         #expect(store.confidenceThreshold == 0.5)
         #expect(store.enableFoundationModels == false)
         #expect(store.respectFocusMode == true)
