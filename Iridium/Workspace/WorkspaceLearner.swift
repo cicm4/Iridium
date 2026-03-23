@@ -24,6 +24,15 @@ final class WorkspaceLearner {
     /// Co-occurrence matrix: bundleID → bundleID → count.
     private(set) var coOccurrences: [String: [String: Int]] = [:]
 
+    /// Hourly usage frequency: bundleID → hour (0-23) → count.
+    private(set) var hourlyUsage: [String: [Int: Int]] = [:]
+
+    /// App switch recency: bundleID → last switch timestamp.
+    private(set) var lastSwitchTimestamps: [String: Date] = [:]
+
+    /// Layout preferences: "bundleA|bundleB" → learned region pair.
+    private(set) var layoutPreferences: [String: LearnedLayoutPair] = [:]
+
     /// Timestamps of recent app activations for sliding window.
     private var recentActivations: [(bundleID: String, timestamp: Date)] = []
 
@@ -83,10 +92,93 @@ final class WorkspaceLearner {
         return groups.filter { $0.count >= Self.minimumGroupSize }
     }
 
+    // MARK: - Enhanced Tracking (Phase 4)
+
+    /// Records an app switch for recency tracking.
+    func recordAppSwitch(to bundleID: String) {
+        lastSwitchTimestamps[bundleID] = Date()
+    }
+
+    /// Records hourly usage for temporal pattern tracking.
+    func recordHourlyUsage(bundleID: String, hour: Int) {
+        if hourlyUsage[bundleID] == nil { hourlyUsage[bundleID] = [:] }
+        hourlyUsage[bundleID]?[hour, default: 0] += 1
+    }
+
+    /// Records a layout choice for a pair of apps.
+    func recordLayoutChoice(
+        appA: String, regionA: LayoutPreset.Region,
+        appB: String, regionB: LayoutPreset.Region
+    ) {
+        let key = layoutKey(appA, appB)
+        let isReversed = appA > appB
+
+        if var existing = layoutPreferences[key] {
+            existing.count += 1
+            // Update regions if this is the same orientation
+            if !isReversed {
+                existing.regionA = regionA
+                existing.regionB = regionB
+            } else {
+                existing.regionA = regionB
+                existing.regionB = regionA
+            }
+            layoutPreferences[key] = existing
+        } else {
+            layoutPreferences[key] = LearnedLayoutPair(
+                regionA: isReversed ? regionB : regionA,
+                regionB: isReversed ? regionA : regionB,
+                count: 1
+            )
+        }
+    }
+
+    /// Returns the preferred layout for a pair of apps, if one has been learned.
+    func preferredLayout(forPair appA: String, _ appB: String) -> LearnedLayoutPair? {
+        let key = layoutKey(appA, appB)
+        guard var pair = layoutPreferences[key] else { return nil }
+
+        // If queried in reverse order, swap regions
+        if appA > appB {
+            let temp = pair.regionA
+            pair.regionA = pair.regionB
+            pair.regionB = temp
+        }
+        return pair
+    }
+
+    /// Returns the normalized hourly frequency for an app at a given hour (0.0 to 1.0).
+    func hourlyFrequency(bundleID: String, hour: Int) -> Double {
+        guard let hours = hourlyUsage[bundleID],
+              let count = hours[hour], count > 0 else { return 0.0 }
+
+        let maxCount = hours.values.max() ?? 1
+        return Double(count) / Double(max(maxCount, 1))
+    }
+
+    /// Returns the last time the user switched to this app.
+    func lastSwitchTime(bundleID: String) -> Date? {
+        lastSwitchTimestamps[bundleID]
+    }
+
+    /// Returns the top N co-occurrence pairs sorted by count.
+    func topCoOccurrencePairs(limit: Int) -> [(String, String, Int)] {
+        var pairs: [(String, String, Int)] = []
+        for (a, neighbors) in coOccurrences {
+            for (b, count) in neighbors where a < b {
+                pairs.append((a, b, count))
+            }
+        }
+        return pairs.sorted { $0.2 > $1.2 }.prefix(limit).map { $0 }
+    }
+
     /// Resets all learned data.
     func reset() {
         coOccurrences.removeAll()
         recentActivations.removeAll()
+        hourlyUsage.removeAll()
+        lastSwitchTimestamps.removeAll()
+        layoutPreferences.removeAll()
     }
 
     // MARK: - Private
@@ -98,4 +190,17 @@ final class WorkspaceLearner {
         coOccurrences[a]?[b, default: 0] += 1
         coOccurrences[b]?[a, default: 0] += 1
     }
+
+    private func layoutKey(_ a: String, _ b: String) -> String {
+        // Canonical key: sorted alphabetically
+        a < b ? "\(a)|\(b)" : "\(b)|\(a)"
+    }
+}
+
+// MARK: - Learned Layout Pair
+
+struct LearnedLayoutPair: Codable, Sendable, Equatable {
+    var regionA: LayoutPreset.Region
+    var regionB: LayoutPreset.Region
+    var count: Int
 }

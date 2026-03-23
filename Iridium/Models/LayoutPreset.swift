@@ -17,6 +17,10 @@ struct LayoutPreset: Codable, Identifiable, Sendable {
         var y: Double
         var width: Double
         var height: Double
+
+        static let leftHalf = Region(x: 0, y: 0, width: 0.5, height: 1.0)
+        static let rightHalf = Region(x: 0.5, y: 0, width: 0.5, height: 1.0)
+        static let fullscreen = Region(x: 0, y: 0, width: 1.0, height: 1.0)
     }
 
     static let leftHalf = LayoutPreset(

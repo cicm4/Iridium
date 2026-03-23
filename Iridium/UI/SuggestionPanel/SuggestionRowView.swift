@@ -24,9 +24,18 @@ struct SuggestionRowView: View {
                     .foregroundStyle(.secondary)
             }
 
-            Text(suggestion.name)
-                .font(isPrimary ? .headline : .body)
-                .lineLimit(1)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(suggestion.name)
+                    .font(isPrimary ? .headline : .body)
+                    .lineLimit(1)
+
+                if let hint = suggestion.contextHint {
+                    Text(hint)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
 
             Spacer()
 

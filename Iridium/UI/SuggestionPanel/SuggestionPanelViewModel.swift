@@ -26,6 +26,7 @@ final class SuggestionPanelViewModel {
         let icon: NSImage?
         let confidence: Double
         let shortcutIndex: Int
+        let contextHint: String?
     }
 
     func configure(
@@ -47,7 +48,8 @@ final class SuggestionPanelViewModel {
                 name: info?.name ?? suggestion.bundleID,
                 icon: BundleIDResolver.icon(for: suggestion.bundleID),
                 confidence: suggestion.confidence,
-                shortcutIndex: index + 1
+                shortcutIndex: index + 1,
+                contextHint: suggestion.contextHint
             )
         }
         selectedIndex = 0

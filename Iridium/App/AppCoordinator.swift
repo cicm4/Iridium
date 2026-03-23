@@ -4,6 +4,7 @@
 //
 
 import AppKit
+import Carbon
 import Foundation
 import Observation
 import OSLog
@@ -23,9 +24,9 @@ final class AppCoordinator {
     let adaptiveWeightStore: AdaptiveWeightStore
     let taskStore = TaskStore()
     let workspaceStore = WorkspaceStore()
-    let workspaceActivator = WorkspaceActivator()
     let workspaceLearner = WorkspaceLearner()
     let integrationRegistry = IntegrationRegistry()
+    private(set) var workspaceHotkeyHandler: WorkspaceHotkeyHandler?
 
     nonisolated init() {
         let persistence = LearningDataPersistence()
@@ -86,8 +87,21 @@ final class AppCoordinator {
             predictionEngine.taskStore = taskStore
         }
 
-        // Load workspaces
+        // Load workspaces (for migration)
         workspaceStore.load()
+
+        // Migrate old preset workspaces to learned data (one-time)
+        if !settings.hasCompletedWorkspaceMigration && !workspaceStore.workspaces.isEmpty {
+            let migrator = WorkspaceMigrator()
+            migrator.migrate(from: workspaceStore.workspaces, into: workspaceLearner)
+            settings.hasCompletedWorkspaceMigration = true
+            Logger.app.info("Migrated \(self.workspaceStore.workspaces.count) preset workspaces to learned data")
+        }
+
+        // Set up predictive window manager
+        if settings.enablePredictiveWorkspace {
+            setupPredictiveWorkspace()
+        }
 
         // Register and start integrations
         integrationRegistry.register(TodoistIntegration())
@@ -103,17 +117,28 @@ final class AppCoordinator {
         // Configure panel
         panelViewModel.configure(
             onSelection: { [weak self] bundleID in
-                self?.predictionEngine.interactionTracker.recordSelection(bundleID: bundleID)
-                self?.hidePanel()
+                guard let self else { return }
+                self.predictionEngine.interactionTracker.recordSelection(bundleID: bundleID)
+
+                // If workspace prediction is active, also arrange the window
+                if let handler = self.workspaceHotkeyHandler, handler.isActive {
+                    Task {
+                        await handler.handleSelection(bundleID: bundleID)
+                    }
+                }
+
+                self.hidePanel()
             },
             onDismissal: { [weak self] in
                 // Explicit dismissal (Escape, click outside) counts toward suppression
                 self?.predictionEngine.interactionTracker.recordDismissal()
+                self?.workspaceHotkeyHandler?.handleDismissal()
                 self?.hidePanel()
             },
             onAutoDismiss: { [weak self] in
                 // Auto-dismiss does NOT count toward suppression —
                 // the user simply didn't need the suggestion
+                self?.workspaceHotkeyHandler?.handleDismissal()
                 self?.hidePanel()
             }
         )
@@ -250,6 +275,57 @@ final class AppCoordinator {
             guard let self, self.panelShowHideGeneration == hideGeneration else { return }
             window.orderOut(nil)
         })
+    }
+
+    // MARK: - Predictive Window Manager
+
+    private func setupPredictiveWorkspace() {
+        let screenCtx = ScreenContextProvider(
+            installedAppRegistry: installedAppRegistry,
+            taskStore: settings.enableTaskMode ? taskStore : nil
+        )
+
+        let predictor = WorkspacePredictor(
+            workspaceLearner: workspaceLearner,
+            installedAppRegistry: installedAppRegistry,
+            interactionTracker: predictionEngine.interactionTracker,
+            adaptiveWeightStore: settings.enablePersistentLearning ? adaptiveWeightStore : nil
+        )
+
+        let layoutEngine = SmartLayoutEngine(workspaceLearner: workspaceLearner)
+
+        let handler = WorkspaceHotkeyHandler(
+            screenContextProvider: screenCtx,
+            predictor: predictor,
+            layoutEngine: layoutEngine,
+            panelViewModel: panelViewModel,
+            interactionTracker: predictionEngine.interactionTracker,
+            workspaceLearner: workspaceLearner
+        )
+
+        handler.onShowPanel = { [weak self] in
+            self?.showPanel()
+        }
+
+        handler.onHidePanel = { [weak self] in
+            self?.hidePanel()
+        }
+
+        self.workspaceHotkeyHandler = handler
+
+        // Register Hyper+Space hotkey (Ctrl+Option+Shift+Cmd+Space)
+        // Space keyCode = 49
+        // Modifiers: control=0x1000, option=0x0800, shift=0x0200, cmd=0x0100
+        let modifiers: UInt32 = UInt32(controlKey | optionKey | shiftKey | cmdKey)
+        _ = windowManager.hotkeyManager.registerHotkey(
+            keyCode: 49,
+            modifiers: modifiers,
+            action: { [weak handler] in
+                handler?.handleHotkeyPress()
+            }
+        )
+
+        Logger.app.info("Predictive window manager enabled (Hyper+Space)")
     }
 
     private func positionPanel(_ window: NSWindow) {
