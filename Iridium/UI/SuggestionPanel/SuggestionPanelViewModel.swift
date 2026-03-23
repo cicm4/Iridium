@@ -17,6 +17,7 @@ final class SuggestionPanelViewModel {
     private var autoDismissTask: Task<Void, Never>?
     private var onSelection: ((String) -> Void)?
     private var onDismissal: (() -> Void)?
+    private var onAutoDismiss: (() -> Void)?
 
     struct ResolvedSuggestion: Identifiable {
         let id: String
@@ -27,9 +28,14 @@ final class SuggestionPanelViewModel {
         let shortcutIndex: Int
     }
 
-    func configure(onSelection: @escaping (String) -> Void, onDismissal: @escaping () -> Void) {
+    func configure(
+        onSelection: @escaping (String) -> Void,
+        onDismissal: @escaping () -> Void,
+        onAutoDismiss: (() -> Void)? = nil
+    ) {
         self.onSelection = onSelection
         self.onDismissal = onDismissal
+        self.onAutoDismiss = onAutoDismiss
     }
 
     func show(result: SuggestionResult, autoDismissDelay: TimeInterval) {
@@ -51,7 +57,10 @@ final class SuggestionPanelViewModel {
         Logger.ui.debug("Panel shown with \(self.suggestions.count) suggestions")
     }
 
+    /// Explicit dismissal by the user (Escape key, click outside).
+    /// This counts toward frequency capping suppression.
     func dismiss() {
+        guard isVisible else { return }
         isVisible = false
         suggestions = []
         autoDismissTask?.cancel()
@@ -63,7 +72,10 @@ final class SuggestionPanelViewModel {
         let suggestion = suggestions[selectedIndex]
         AppLauncher.launch(bundleID: suggestion.bundleID)
         onSelection?(suggestion.bundleID)
-        dismiss()
+        // Selection dismisses the panel but does NOT count as a dismissal
+        isVisible = false
+        suggestions = []
+        autoDismissTask?.cancel()
     }
 
     /// Called when the user clicks a specific suggestion row.
@@ -88,7 +100,19 @@ final class SuggestionPanelViewModel {
         autoDismissTask = Task {
             try? await Task.sleep(for: .seconds(delay))
             guard !Task.isCancelled else { return }
-            dismiss()
+            autoDismiss()
         }
+    }
+
+    /// Auto-dismiss: the timer expired without user interaction.
+    /// This does NOT count toward frequency capping — the user simply
+    /// didn't need the suggestion, which is different from actively dismissing it.
+    private func autoDismiss() {
+        guard isVisible else { return }
+        isVisible = false
+        suggestions = []
+        autoDismissTask?.cancel()
+        onAutoDismiss?()
+        Logger.ui.debug("Panel auto-dismissed")
     }
 }
