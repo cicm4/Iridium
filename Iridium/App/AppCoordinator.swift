@@ -21,6 +21,7 @@ final class AppCoordinator {
     let appPreferences = AppPreferences()
     let installedAppRegistry = InstalledAppRegistry()
     let adaptiveWeightStore: AdaptiveWeightStore
+    let taskStore = TaskStore()
 
     nonisolated init() {
         let persistence = LearningDataPersistence()
@@ -74,6 +75,12 @@ final class AppCoordinator {
 
         // Wire adaptive learning into interaction tracker
         predictionEngine.interactionTracker.adaptiveWeightStore = settings.enablePersistentLearning ? adaptiveWeightStore : nil
+
+        // Load task store and wire into prediction engine
+        if settings.enableTaskMode {
+            taskStore.load()
+            predictionEngine.taskStore = taskStore
+        }
 
         // Configure panel
         panelViewModel.configure(

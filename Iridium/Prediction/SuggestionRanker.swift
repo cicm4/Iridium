@@ -31,6 +31,9 @@ struct SuggestionRanker: Sendable {
     ///   - pinnedBundleIDs: Bundle IDs the user has pinned to appear first.
     ///   - adaptiveWeightStore: Persistent Bayesian weight store for learned preferences.
     ///   - contentType: Content type of the current signal (for adaptive weight lookup).
+    /// Maximum multiplicative boost from active task context.
+    static let maxTaskMultiplier: Double = TaskContext.maxMultiplier
+
     func rank(
         suggestions: [Suggestion],
         signalTimestamp: ContinuousClock.Instant,
@@ -39,7 +42,9 @@ struct SuggestionRanker: Sendable {
         excludedBundleIDs: Set<String> = [],
         pinnedBundleIDs: Set<String> = [],
         adaptiveWeightStore: AdaptiveWeightStore? = nil,
-        contentType: ContentType? = nil
+        contentType: ContentType? = nil,
+        taskContext: TaskContext? = nil,
+        installedAppRegistry: InstalledAppRegistry? = nil
     ) -> [Suggestion] {
         let now = ContinuousClock.now
         let signalAge = now - signalTimestamp
@@ -69,6 +74,13 @@ struct SuggestionRanker: Sendable {
             // Adaptive learning boost (persistent user preference)
             if let store = adaptiveWeightStore, let ct = contentType {
                 score += store.weight(for: suggestion.bundleID, contentType: ct)
+            }
+
+            // Task mode multiplicative boost
+            if let task = taskContext, let registry = installedAppRegistry {
+                let category = registry.category(for: suggestion.bundleID)
+                let multiplier = task.multiplier(for: category)
+                score *= multiplier
             }
 
             return (suggestion, score)

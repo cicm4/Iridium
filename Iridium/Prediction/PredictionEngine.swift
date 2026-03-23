@@ -20,6 +20,7 @@ final class PredictionEngine {
     var appPreferences: AppPreferences?
     var adaptiveWeightStore: AdaptiveWeightStore?
     var installedAppRegistry: InstalledAppRegistry?
+    var taskStore: TaskStore?
 
     private var resultContinuation: AsyncStream<SuggestionResult>.Continuation?
     private(set) var resultStream: AsyncStream<SuggestionResult>?
@@ -98,6 +99,9 @@ final class PredictionEngine {
         let excludedBundleIDs = appPreferences?.excludedBundleIDs ?? []
         let pinnedBundleIDs = appPreferences?.pinnedBundleIDs ?? []
 
+        // Update interaction tracker with current content type for adaptive learning
+        interactionTracker.lastContentType = enrichedSignal.contentType
+
         // Rank and deduplicate, prioritizing running apps
         let ranked = ranker.rank(
             suggestions: suggestions,
@@ -107,7 +111,9 @@ final class PredictionEngine {
             excludedBundleIDs: excludedBundleIDs,
             pinnedBundleIDs: pinnedBundleIDs,
             adaptiveWeightStore: adaptiveWeightStore,
-            contentType: enrichedSignal.contentType
+            contentType: enrichedSignal.contentType,
+            taskContext: taskStore?.activeTask,
+            installedAppRegistry: installedAppRegistry
         )
 
         // Filter out apps that are not installed on this machine

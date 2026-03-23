@@ -28,6 +28,7 @@ final class SettingsStore {
         self.enableFoundationModels = defaults.object(forKey: Keys.enableFoundationModels) as? Bool ?? false
         self.respectFocusMode = defaults.object(forKey: Keys.respectFocusMode) as? Bool ?? true
         self.enablePersistentLearning = defaults.object(forKey: Keys.enablePersistentLearning) as? Bool ?? false
+        self.enableTaskMode = defaults.object(forKey: Keys.enableTaskMode) as? Bool ?? true
 
         if let ids = defaults.stringArray(forKey: Keys.enabledPackIDs) {
             self.enabledPackIDs = Set(ids)
@@ -66,6 +67,10 @@ final class SettingsStore {
         didSet { defaults.set(enablePersistentLearning, forKey: Keys.enablePersistentLearning) }
     }
 
+    var enableTaskMode: Bool {
+        didSet { defaults.set(enableTaskMode, forKey: Keys.enableTaskMode) }
+    }
+
     var enabledPackIDs: Set<String> = [] {
         didSet { defaults.set(Array(enabledPackIDs), forKey: Keys.enabledPackIDs) }
     }
@@ -79,6 +84,7 @@ final class SettingsStore {
         static let enableFoundationModels = "enableFoundationModels"
         static let respectFocusMode = "respectFocusMode"
         static let enablePersistentLearning = "enablePersistentLearning"
+        static let enableTaskMode = "enableTaskMode"
         static let enabledPackIDs = "enabledPackIDs"
     }
 }
