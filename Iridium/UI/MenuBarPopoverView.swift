@@ -42,10 +42,10 @@ struct MenuBarPopoverView: View {
 
             Divider()
 
-            Button("Settings...") {
-                NSApp.activate()
-                NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+            SettingsLink {
+                Text("Settings...")
             }
+            .buttonStyle(.plain)
 
             Button("Quit Iridium") {
                 NSApp.terminate(nil)
