@@ -19,6 +19,13 @@ final class AppCoordinator {
     let accessibilityManager = AccessibilityManager()
     let windowManager = WindowManager()
     let appPreferences = AppPreferences()
+    let installedAppRegistry = InstalledAppRegistry()
+    let adaptiveWeightStore: AdaptiveWeightStore
+
+    nonisolated init() {
+        let persistence = LearningDataPersistence()
+        self.adaptiveWeightStore = AdaptiveWeightStore(persistence: persistence)
+    }
 
     private var signalCollector: SignalCollector?
     private var signalProcessingTask: Task<Void, Never>?
@@ -48,9 +55,25 @@ final class AppCoordinator {
         }
         packRegistry.enabledPackIDs = settings.enabledPackIDs
 
+        // Load adaptive weights if persistent learning is enabled
+        if settings.enablePersistentLearning {
+            adaptiveWeightStore.load()
+        }
+
+        // Scan installed apps in the background
+        Task.detached { [installedAppRegistry] in
+            installedAppRegistry.scan()
+        }
+        installedAppRegistry.startObservingLaunches()
+
         // Configure prediction engine
         predictionEngine.configure(packRegistry: packRegistry, settings: settings)
         predictionEngine.appPreferences = appPreferences
+        predictionEngine.adaptiveWeightStore = settings.enablePersistentLearning ? adaptiveWeightStore : nil
+        predictionEngine.installedAppRegistry = installedAppRegistry
+
+        // Wire adaptive learning into interaction tracker
+        predictionEngine.interactionTracker.adaptiveWeightStore = settings.enablePersistentLearning ? adaptiveWeightStore : nil
 
         // Configure panel
         panelViewModel.configure(
@@ -113,6 +136,7 @@ final class AppCoordinator {
         windowManager.stop()
         panelViewModel.dismiss()
         hidePanel()
+        installedAppRegistry.stopObservingLaunches()
 
         signalProcessingTask = nil
         resultProcessingTask = nil
