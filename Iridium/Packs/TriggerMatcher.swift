@@ -56,6 +56,22 @@ struct TriggerMatcher: Sendable {
             return .number(Double(context.hourOfDay))
         case "display.count":
             return .number(Double(context.displayCount))
+
+        // Phase 3: Enhanced signals
+        case "window.title":
+            return context.windowTitle.map { .string($0) }
+        case "screen.content":
+            return context.screenContentSample.map { .string($0) }
+        case "file.extensions":
+            return context.activeFileExtensions.map { .string($0.joined(separator: ",")) }
+        case "calendar.meetingSoon":
+            return context.upcomingMeetingInMinutes.map { .number(Double($0)) }
+        case "browser.domain":
+            return context.browserDomain.map { .string($0) }
+        case "browser.tabTitle":
+            return context.browserTabTitle.map { .string($0) }
+        case "clipboard.pattern":
+            return context.clipboardPatternHint.map { .string($0) }
         default:
             return nil
         }

@@ -1,0 +1,45 @@
+{
+  "id": "com.iridium.browser-context",
+  "name": "Browser Context",
+  "version": "1.0.0",
+  "author": "Iridium",
+  "description": "Suggests development and productivity apps based on active browser tab",
+  "triggers": [
+    {
+      "signal": "browser.domain",
+      "matches": ["github.com", "gitlab.com", "bitbucket.org"],
+      "confidence": 0.85,
+      "suggest": ["com.todesktop.230313mzl4w4u92", "com.apple.dt.Xcode", "com.microsoft.VSCode"]
+    },
+    {
+      "signal": "browser.domain",
+      "matches": ["stackoverflow.com", "developer.apple.com", "docs.python.org"],
+      "confidence": 0.80,
+      "suggest": ["com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode", "com.apple.dt.Xcode"]
+    },
+    {
+      "signal": "browser.domain",
+      "matches": ["docs.google.com", "notion.so", "www.notion.so"],
+      "confidence": 0.80,
+      "suggest": ["com.apple.iWork.Pages", "com.microsoft.Word", "com.apple.Notes"]
+    },
+    {
+      "signal": "browser.domain",
+      "matches": ["figma.com", "www.figma.com", "dribbble.com", "behance.net"],
+      "confidence": 0.80,
+      "suggest": ["com.figma.Desktop", "com.apple.Preview", "com.adobe.Photoshop"]
+    },
+    {
+      "signal": "clipboard.pattern",
+      "matches": "research",
+      "confidence": 0.75,
+      "suggest": ["com.apple.Notes", "md.obsidian", "com.notion.Notion"]
+    },
+    {
+      "signal": "clipboard.pattern",
+      "matches": "development",
+      "confidence": 0.80,
+      "suggest": ["com.todesktop.230313mzl4w4u92", "com.apple.dt.Xcode", "com.microsoft.VSCode"]
+    }
+  ]
+}

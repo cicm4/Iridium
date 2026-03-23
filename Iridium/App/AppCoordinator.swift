@@ -100,8 +100,13 @@ final class AppCoordinator {
             }
         )
 
-        // Start signal collection
+        // Start signal collection with enhanced providers
         let collector = SignalCollector()
+        collector.configureEnhancedProviders(
+            enableBrowserTabAnalysis: settings.enableBrowserTabAnalysis,
+            enableCalendarIntegration: settings.enableCalendarIntegration,
+            enableClipboardHistory: settings.enableClipboardHistory
+        )
         self.signalCollector = collector
         let signalStream = collector.start()
 

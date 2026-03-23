@@ -29,6 +29,9 @@ final class SettingsStore {
         self.respectFocusMode = defaults.object(forKey: Keys.respectFocusMode) as? Bool ?? true
         self.enablePersistentLearning = defaults.object(forKey: Keys.enablePersistentLearning) as? Bool ?? false
         self.enableTaskMode = defaults.object(forKey: Keys.enableTaskMode) as? Bool ?? true
+        self.enableBrowserTabAnalysis = defaults.object(forKey: Keys.enableBrowserTabAnalysis) as? Bool ?? false
+        self.enableCalendarIntegration = defaults.object(forKey: Keys.enableCalendarIntegration) as? Bool ?? false
+        self.enableClipboardHistory = defaults.object(forKey: Keys.enableClipboardHistory) as? Bool ?? false
 
         if let ids = defaults.stringArray(forKey: Keys.enabledPackIDs) {
             self.enabledPackIDs = Set(ids)
@@ -71,6 +74,18 @@ final class SettingsStore {
         didSet { defaults.set(enableTaskMode, forKey: Keys.enableTaskMode) }
     }
 
+    var enableBrowserTabAnalysis: Bool {
+        didSet { defaults.set(enableBrowserTabAnalysis, forKey: Keys.enableBrowserTabAnalysis) }
+    }
+
+    var enableCalendarIntegration: Bool {
+        didSet { defaults.set(enableCalendarIntegration, forKey: Keys.enableCalendarIntegration) }
+    }
+
+    var enableClipboardHistory: Bool {
+        didSet { defaults.set(enableClipboardHistory, forKey: Keys.enableClipboardHistory) }
+    }
+
     var enabledPackIDs: Set<String> = [] {
         didSet { defaults.set(Array(enabledPackIDs), forKey: Keys.enabledPackIDs) }
     }
@@ -85,6 +100,9 @@ final class SettingsStore {
         static let respectFocusMode = "respectFocusMode"
         static let enablePersistentLearning = "enablePersistentLearning"
         static let enableTaskMode = "enableTaskMode"
+        static let enableBrowserTabAnalysis = "enableBrowserTabAnalysis"
+        static let enableCalendarIntegration = "enableCalendarIntegration"
+        static let enableClipboardHistory = "enableClipboardHistory"
         static let enabledPackIDs = "enabledPackIDs"
     }
 }

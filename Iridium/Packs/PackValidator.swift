@@ -18,6 +18,14 @@ struct PackValidator: Sendable {
         "app.frontmost",
         "time.hourOfDay",
         "display.count",
+        // Phase 3: Enhanced signals
+        "window.title",
+        "screen.content",
+        "file.extensions",
+        "calendar.meetingSoon",
+        "browser.domain",
+        "browser.tabTitle",
+        "clipboard.pattern",
     ]
 
     func validate(_ manifest: PackManifest) throws {

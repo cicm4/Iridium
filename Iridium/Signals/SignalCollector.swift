@@ -14,6 +14,11 @@ final class SignalCollector {
     private let displayProvider: DisplaySignalProvider
     private let focusProvider: any FocusModeProviding
 
+    // Phase 3: Enhanced signal providers (optional, opt-in)
+    private var browserTabProvider: BrowserTabProvider?
+    private var calendarProvider: CalendarSignalProvider?
+    private var clipboardHistoryProvider: ClipboardHistoryProvider?
+
     private var continuation: AsyncStream<ContextSignal>.Continuation?
     private(set) var signalStream: AsyncStream<ContextSignal>?
 
@@ -31,6 +36,17 @@ final class SignalCollector {
         self.focusProvider = focusProvider
     }
 
+    /// Configures optional Phase 3 signal providers based on user settings.
+    func configureEnhancedProviders(
+        enableBrowserTabAnalysis: Bool = false,
+        enableCalendarIntegration: Bool = false,
+        enableClipboardHistory: Bool = false
+    ) {
+        browserTabProvider = enableBrowserTabAnalysis ? BrowserTabProvider() : nil
+        calendarProvider = enableCalendarIntegration ? CalendarSignalProvider() : nil
+        clipboardHistoryProvider = enableClipboardHistory ? ClipboardHistoryProvider() : nil
+    }
+
     func start() -> AsyncStream<ContextSignal> {
         let stream = AsyncStream<ContextSignal> { continuation in
             self.continuation = continuation
@@ -44,6 +60,10 @@ final class SignalCollector {
         clipboardMonitor.start()
         appActivityMonitor.start()
 
+        // Start optional providers
+        browserTabProvider?.start()
+        calendarProvider?.start()
+
         Logger.signals.info("SignalCollector started")
         return stream
     }
@@ -51,6 +71,9 @@ final class SignalCollector {
     func stop() {
         clipboardMonitor.stop()
         appActivityMonitor.stop()
+        browserTabProvider?.stop()
+        calendarProvider?.stop()
+        clipboardHistoryProvider?.clear()
         continuation?.finish()
         continuation = nil
         signalStream = nil
@@ -58,16 +81,39 @@ final class SignalCollector {
     }
 
     private func emitSignal(clipboardSnapshot: ClipboardMonitor.ClipboardSnapshot) {
+        // Update browser tab if applicable
+        browserTabProvider?.update()
+
         let signal = ContextSignal(
             clipboardUTI: clipboardSnapshot.uti,
             clipboardSample: clipboardSnapshot.sample,
             frontmostAppBundleID: appActivityMonitor.currentBundleID,
             hourOfDay: timeProvider.currentHourOfDay,
             displayCount: displayProvider.displayCount,
-            focusModeActive: focusProvider.isFocusModeActive
+            focusModeActive: focusProvider.isFocusModeActive,
+            // Phase 3: Enhanced signals
+            upcomingMeetingInMinutes: calendarProvider?.currentContext?.upcomingMeetingInMinutes,
+            browserDomain: browserTabProvider?.currentSnapshot?.domain,
+            browserTabTitle: browserTabProvider?.currentSnapshot?.title,
+            clipboardPatternHint: clipboardHistoryProvider?.patternHint
+        )
+
+        // Record in clipboard history for pattern detection
+        // (contentType will be enriched later, use nil for now — pattern detection
+        // uses source app which is available immediately)
+        clipboardHistoryProvider?.record(
+            contentType: .unknown,
+            sourceApp: appActivityMonitor.currentBundleID
         )
 
         Logger.signals.debug("Signal emitted: UTI=\(signal.clipboardUTI ?? "nil", privacy: .public), app=\(signal.frontmostAppBundleID ?? "nil", privacy: .public)")
         continuation?.yield(signal)
+    }
+
+    /// Updates clipboard history with the actual content type after classification.
+    /// Called by PredictionEngine after classification completes.
+    func updateClipboardHistory(contentType: ContentType, sourceApp: String?) {
+        // Replace the last entry's unknown type with the actual type
+        clipboardHistoryProvider?.record(contentType: contentType, sourceApp: sourceApp)
     }
 }
