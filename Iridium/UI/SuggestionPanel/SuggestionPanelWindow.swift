@@ -14,6 +14,9 @@ final class SuggestionPanelWindow: NSPanel {
     /// Must be set before the panel is shown.
     var panelViewModel: SuggestionPanelViewModel?
 
+    /// Reference to the installed app registry for search.
+    var installedAppRegistry: InstalledAppRegistry?
+
     init() {
         super.init(
             contentRect: NSRect(x: 0, y: 0, width: 280, height: 200),
@@ -49,7 +52,8 @@ final class SuggestionPanelWindow: NSPanel {
 
     /// Intercept key events at the NSPanel level. SwiftUI's .onKeyPress does
     /// not work for .nonActivatingPanel windows because the app is never
-    /// activated. We handle arrow keys, Return, and Escape here directly.
+    /// activated. We handle arrow keys, Return, Escape, Backspace, and
+    /// printable characters (for search) here directly.
     override func keyDown(with event: NSEvent) {
         guard let vm = panelViewModel else {
             super.keyDown(with: event)
@@ -64,9 +68,28 @@ final class SuggestionPanelWindow: NSPanel {
         case 36: // Return
             vm.selectCurrent()
         case 53: // Escape
-            vm.dismiss()
+            if vm.isSearching {
+                vm.searchQuery = ""
+                vm.searchResults = []
+            } else {
+                vm.dismiss()
+            }
+        case 51: // Backspace
+            vm.backspaceSearch()
+            if let registry = installedAppRegistry {
+                vm.performSearch(query: vm.searchQuery, using: registry)
+            }
         default:
-            super.keyDown(with: event)
+            // Forward printable characters to search
+            if let chars = event.characters, !chars.isEmpty,
+               chars.unicodeScalars.allSatisfy({ CharacterSet.alphanumerics.union(.whitespaces).contains($0) }) {
+                vm.appendToSearch(chars)
+                if let registry = installedAppRegistry {
+                    vm.performSearch(query: vm.searchQuery, using: registry)
+                }
+            } else {
+                super.keyDown(with: event)
+            }
         }
     }
 }

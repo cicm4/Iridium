@@ -223,8 +223,9 @@ final class AppCoordinator {
             )
             window.contentView = hostingView
 
-            // Wire up the view model for keyboard event forwarding
+            // Wire up the view model and app registry for keyboard event forwarding + search
             window.panelViewModel = panelViewModel
+            window.installedAppRegistry = installedAppRegistry
 
             // Dismiss panel when user clicks outside
             window.onClickOutside = { [weak self] in
