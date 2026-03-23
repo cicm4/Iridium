@@ -25,6 +25,11 @@ struct SettingsView: View {
                     Label("Apps", systemImage: "app.badge")
                 }
 
+            PredictiveWorkspaceSettingsView()
+                .tabItem {
+                    Label("Prediction", systemImage: "wand.and.stars")
+                }
+
             LayoutSettingsView()
                 .tabItem {
                     Label("Layouts", systemImage: "rectangle.split.3x3")
