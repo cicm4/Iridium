@@ -3,6 +3,7 @@
 //  Iridium
 //
 
+import AppKit
 import Foundation
 import OSLog
 
@@ -77,11 +78,19 @@ final class PredictionEngine {
             return
         }
 
-        // Rank and deduplicate
+        // Get currently running apps for prioritization
+        let runningApps = Set(
+            NSWorkspace.shared.runningApplications
+                .filter { $0.activationPolicy == .regular }
+                .compactMap(\.bundleIdentifier)
+        )
+
+        // Rank and deduplicate, prioritizing running apps
         let ranked = ranker.rank(
             suggestions: suggestions,
             signalTimestamp: signal.timestamp,
-            interactionTracker: interactionTracker
+            interactionTracker: interactionTracker,
+            runningAppBundleIDs: runningApps
         )
 
         // Filter by confidence threshold

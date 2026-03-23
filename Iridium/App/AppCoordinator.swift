@@ -47,6 +47,7 @@ final class AppCoordinator {
             },
             onDismissal: { [weak self] in
                 self?.predictionEngine.interactionTracker.recordDismissal()
+                self?.hidePanel()
             }
         )
 
@@ -101,6 +102,17 @@ final class AppCoordinator {
         Logger.app.info("Iridium stopped")
     }
 
+    // MARK: - Running Apps
+
+    /// Returns bundle IDs of all currently running user applications.
+    func runningAppBundleIDs() -> Set<String> {
+        Set(
+            NSWorkspace.shared.runningApplications
+                .filter { $0.activationPolicy == .regular }
+                .compactMap(\.bundleIdentifier)
+        )
+    }
+
     // MARK: - Panel Management
 
     private func showPanel() {
@@ -111,6 +123,12 @@ final class AppCoordinator {
                     .environment(panelViewModel)
             )
             window.contentView = hostingView
+
+            // Dismiss panel when user clicks outside
+            window.onClickOutside = { [weak self] in
+                self?.panelViewModel.dismiss()
+            }
+
             panelWindow = window
         }
 
@@ -118,6 +136,9 @@ final class AppCoordinator {
 
         window.alphaValue = 0
         window.orderFrontRegardless()
+
+        // Make the panel key so it receives keyboard events (arrow keys, enter, escape)
+        window.makeKey()
 
         // Layout pass to get correct content size before positioning
         window.layoutIfNeeded()
@@ -132,7 +153,7 @@ final class AppCoordinator {
         }
     }
 
-    private func hidePanel() {
+    func hidePanel() {
         guard let window = panelWindow else { return }
 
         NSAnimationContext.runAnimationGroup({ context in

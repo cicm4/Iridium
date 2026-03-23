@@ -1,15 +1,15 @@
 {
   "id": "com.iridium.development",
   "name": "Development",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Iridium",
-  "description": "Suggests IDEs and development tools when code is copied",
+  "description": "Suggests IDEs and development tools when code is copied. Prioritizes language-specific IDEs.",
   "triggers": [
     {
       "signal": "clipboard.contentType",
       "matches": "code",
       "confidence": 0.90,
-      "suggest": ["com.apple.dt.Xcode", "com.microsoft.VSCode", "com.jetbrains.intellij"]
+      "suggest": ["com.todesktop.230313mzl4w4u92", "com.apple.dt.Xcode", "com.microsoft.VSCode"]
     },
     {
       "conditions": [
@@ -17,7 +17,7 @@
         { "signal": "clipboard.language", "matches": "swift" }
       ],
       "confidence": 0.95,
-      "suggest": ["com.apple.dt.Xcode", "com.apple.dt.Xcode-Playground"]
+      "suggest": ["com.apple.dt.Xcode", "com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode"]
     },
     {
       "conditions": [
@@ -25,7 +25,7 @@
         { "signal": "clipboard.language", "matches": "python" }
       ],
       "confidence": 0.95,
-      "suggest": ["com.jetbrains.pycharm", "com.microsoft.VSCode"]
+      "suggest": ["com.todesktop.230313mzl4w4u92", "com.jetbrains.pycharm", "com.microsoft.VSCode"]
     },
     {
       "conditions": [
@@ -33,7 +33,23 @@
         { "signal": "clipboard.language", "matches": ["javascript", "typescript"] }
       ],
       "confidence": 0.95,
-      "suggest": ["com.microsoft.VSCode", "com.webstorm"]
+      "suggest": ["com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode", "com.webstorm"]
+    },
+    {
+      "conditions": [
+        { "signal": "clipboard.contentType", "matches": "code" },
+        { "signal": "clipboard.language", "matches": "rust" }
+      ],
+      "confidence": 0.95,
+      "suggest": ["com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode", "com.jetbrains.rustrover"]
+    },
+    {
+      "conditions": [
+        { "signal": "clipboard.contentType", "matches": "code" },
+        { "signal": "clipboard.language", "matches": "go" }
+      ],
+      "confidence": 0.95,
+      "suggest": ["com.todesktop.230313mzl4w4u92", "com.microsoft.VSCode", "com.jetbrains.goland"]
     }
   ]
 }

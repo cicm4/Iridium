@@ -23,7 +23,7 @@ final class SettingsStore {
         self.isEnabled = defaults.object(forKey: Keys.isEnabled) as? Bool ?? true
         self.showSuggestions = defaults.object(forKey: Keys.showSuggestions) as? Bool ?? true
         self.suggestionPosition = SuggestionPosition(rawValue: defaults.string(forKey: Keys.suggestionPosition) ?? "") ?? .nearCursor
-        self.autoDismissDelay = defaults.object(forKey: Keys.autoDismissDelay) as? TimeInterval ?? 4.0
+        self.autoDismissDelay = defaults.object(forKey: Keys.autoDismissDelay) as? TimeInterval ?? 10.0
         self.confidenceThreshold = defaults.object(forKey: Keys.confidenceThreshold) as? Double ?? 0.5
         self.enableFoundationModels = defaults.object(forKey: Keys.enableFoundationModels) as? Bool ?? false
         self.respectFocusMode = defaults.object(forKey: Keys.respectFocusMode) as? Bool ?? true
