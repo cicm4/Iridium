@@ -26,13 +26,15 @@ struct Suggestion: Sendable, Identifiable, Equatable {
     let confidence: Double
     let sourcePackID: String
     let kind: SuggestionKind
+    let contextHint: String?
 
-    init(bundleID: String, confidence: Double, sourcePackID: String, kind: SuggestionKind = .app) {
+    init(bundleID: String, confidence: Double, sourcePackID: String, kind: SuggestionKind = .app, contextHint: String? = nil) {
         self.id = "\(sourcePackID):\(bundleID)"
         self.bundleID = bundleID
         self.confidence = confidence
         self.sourcePackID = sourcePackID
         self.kind = kind
+        self.contextHint = contextHint
     }
 
     /// Whether this is a workspace suggestion.

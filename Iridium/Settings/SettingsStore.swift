@@ -32,6 +32,9 @@ final class SettingsStore {
         self.enableBrowserTabAnalysis = defaults.object(forKey: Keys.enableBrowserTabAnalysis) as? Bool ?? false
         self.enableCalendarIntegration = defaults.object(forKey: Keys.enableCalendarIntegration) as? Bool ?? false
         self.enableClipboardHistory = defaults.object(forKey: Keys.enableClipboardHistory) as? Bool ?? false
+        self.enablePredictiveWorkspace = defaults.object(forKey: Keys.enablePredictiveWorkspace) as? Bool ?? true
+        self.enableScreenOCR = defaults.object(forKey: Keys.enableScreenOCR) as? Bool ?? false
+        self.hasCompletedWorkspaceMigration = defaults.object(forKey: Keys.hasCompletedWorkspaceMigration) as? Bool ?? false
 
         if let ids = defaults.stringArray(forKey: Keys.enabledPackIDs) {
             self.enabledPackIDs = Set(ids)
@@ -86,6 +89,18 @@ final class SettingsStore {
         didSet { defaults.set(enableClipboardHistory, forKey: Keys.enableClipboardHistory) }
     }
 
+    var enablePredictiveWorkspace: Bool {
+        didSet { defaults.set(enablePredictiveWorkspace, forKey: Keys.enablePredictiveWorkspace) }
+    }
+
+    var enableScreenOCR: Bool {
+        didSet { defaults.set(enableScreenOCR, forKey: Keys.enableScreenOCR) }
+    }
+
+    var hasCompletedWorkspaceMigration: Bool {
+        didSet { defaults.set(hasCompletedWorkspaceMigration, forKey: Keys.hasCompletedWorkspaceMigration) }
+    }
+
     var enabledPackIDs: Set<String> = [] {
         didSet { defaults.set(Array(enabledPackIDs), forKey: Keys.enabledPackIDs) }
     }
@@ -103,6 +118,9 @@ final class SettingsStore {
         static let enableBrowserTabAnalysis = "enableBrowserTabAnalysis"
         static let enableCalendarIntegration = "enableCalendarIntegration"
         static let enableClipboardHistory = "enableClipboardHistory"
+        static let enablePredictiveWorkspace = "enablePredictiveWorkspace"
+        static let enableScreenOCR = "enableScreenOCR"
+        static let hasCompletedWorkspaceMigration = "hasCompletedWorkspaceMigration"
         static let enabledPackIDs = "enabledPackIDs"
     }
 }
