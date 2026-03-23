@@ -23,6 +23,21 @@ struct RuleBasedClassifier: ContentClassifier {
                     tier: .ruleBased
                 )
             }
+
+            // Safety net: if UTI says prose but content looks like code,
+            // trust the content. IDEs may put rich-text UTIs on the pasteboard.
+            if contentType == .prose, let sample,
+               let patternResult = patternMatcher.match(sample: sample),
+               patternResult.contentType == .code
+            {
+                return ClassificationResult(
+                    contentType: .code,
+                    language: patternResult.language,
+                    confidence: patternResult.confidence,
+                    tier: .ruleBased
+                )
+            }
+
             return ClassificationResult(
                 contentType: contentType,
                 language: nil,
@@ -31,7 +46,7 @@ struct RuleBasedClassifier: ContentClassifier {
             )
         }
 
-        // UTI was ambiguous (e.g., plain-text) — try pattern matching on content
+        // UTI was ambiguous (e.g., plain-text, html, rtf) — try pattern matching on content
         if let sample {
             if let result = patternMatcher.match(sample: sample) {
                 return ClassificationResult(

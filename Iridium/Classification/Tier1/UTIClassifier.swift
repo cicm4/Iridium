@@ -38,9 +38,10 @@ struct UTIClassifier: Sendable {
             return nil  // Defer to pattern matching for more specific classification
         }
 
-        // Rich text
+        // Rich text containers (HTML, RTF) are AMBIGUOUS — IDEs copy code as HTML
+        // for syntax highlighting. Defer to PatternMatcher for content analysis.
         if lower.contains("public.rtf") || lower.contains("public.html") {
-            return .prose
+            return nil  // Defer to pattern matching — could be code or prose
         }
 
         return nil
