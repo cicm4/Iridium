@@ -13,7 +13,7 @@ struct IridiumApp: App {
 
     var body: some Scene {
         Settings {
-            SettingsView()
+            SettingsView(appPreferences: appDelegate.coordinator.appPreferences)
                 .environment(appDelegate.coordinator)
         }
     }

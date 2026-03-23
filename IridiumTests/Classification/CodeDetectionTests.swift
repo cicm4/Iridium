@@ -182,4 +182,51 @@ struct CodeDetectionTests {
         #expect(!devSuggestions.isEmpty, "Dev pack must fire for code")
         #expect(researchSuggestions.isEmpty, "Research pack must NOT fire for code")
     }
+
+    // MARK: - Code-lock and IDE context boost tests
+
+    @Test func tier2CannotOverrideCodeWithProse() async {
+        let pipeline = ClassificationPipeline()
+        // This text has English-like identifiers but IS code
+        let result = await pipeline.classify(
+            uti: "public.plain-text",
+            sample: "let totalPrice = calculateTotal(items)"
+        )
+        #expect(result.contentType == .code)
+    }
+
+    @Test func copyFromCursorBoostsCodeConfidence() async {
+        let pipeline = ClassificationPipeline()
+        let result = await pipeline.classify(
+            uti: "public.plain-text",
+            sample: "let totalPrice = calculateTotal(items)",
+            sourceAppBundleID: "com.todesktop.230313mzl4w4u92"
+        )
+        #expect(result.contentType == .code)
+        #expect(result.confidence >= 0.92)
+    }
+
+    @Test func copyFromSafariDoesNotBoostProse() async {
+        let pipeline = ClassificationPipeline()
+        let result = await pipeline.classify(
+            uti: "public.plain-text",
+            sample: "The meeting is scheduled for tomorrow at three in the afternoon.",
+            sourceAppBundleID: "com.apple.Safari"
+        )
+        #expect(result.contentType == .prose)
+    }
+
+    @Test func codeWithEnglishCommentsStaysCode() async {
+        let pipeline = ClassificationPipeline()
+        let result = await pipeline.classify(
+            uti: "public.plain-text",
+            sample: """
+            // This function calculates the total price
+            func calculateTotal(items: [Item]) -> Double {
+                return items.reduce(0) { $0 + $1.price }
+            }
+            """
+        )
+        #expect(result.contentType == .code)
+    }
 }

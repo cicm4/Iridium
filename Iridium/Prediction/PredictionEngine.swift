@@ -17,6 +17,7 @@ final class PredictionEngine {
 
     private var packRegistry: PackRegistry?
     private var settings: SettingsStore?
+    var appPreferences: AppPreferences?
 
     private var resultContinuation: AsyncStream<SuggestionResult>.Continuation?
     private(set) var resultStream: AsyncStream<SuggestionResult>?
@@ -60,7 +61,8 @@ final class PredictionEngine {
         // Run tiered classification
         let classification = await classificationPipeline.classify(
             uti: signal.clipboardUTI,
-            sample: signal.clipboardSample
+            sample: signal.clipboardSample,
+            sourceAppBundleID: signal.frontmostAppBundleID
         )
 
         // Enrich signal with classification
@@ -85,16 +87,27 @@ final class PredictionEngine {
                 .compactMap(\.bundleIdentifier)
         )
 
+        // Get user preferences
+        let excludedBundleIDs = appPreferences?.excludedBundleIDs ?? []
+        let pinnedBundleIDs = appPreferences?.pinnedBundleIDs ?? []
+
         // Rank and deduplicate, prioritizing running apps
         let ranked = ranker.rank(
             suggestions: suggestions,
             signalTimestamp: signal.timestamp,
             interactionTracker: interactionTracker,
-            runningAppBundleIDs: runningApps
+            runningAppBundleIDs: runningApps,
+            excludedBundleIDs: excludedBundleIDs,
+            pinnedBundleIDs: pinnedBundleIDs
         )
 
+        // Filter out apps that are not installed on this machine
+        let installed = ranked.filter { suggestion in
+            NSWorkspace.shared.urlForApplication(withBundleIdentifier: suggestion.bundleID) != nil
+        }
+
         // Filter by confidence threshold
-        let filtered = ranked.filter { $0.confidence >= settings.confidenceThreshold }
+        let filtered = installed.filter { $0.confidence >= settings.confidenceThreshold }
         guard !filtered.isEmpty else { return }
 
         let result = SuggestionResult(suggestions: filtered, signal: enrichedSignal)

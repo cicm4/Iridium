@@ -1,7 +1,7 @@
 {
   "id": "com.iridium.communication",
   "name": "Communication",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "author": "Iridium",
   "description": "Suggests mail and messaging apps for email addresses",
   "triggers": [
@@ -9,7 +9,7 @@
       "signal": "clipboard.contentType",
       "matches": "email",
       "confidence": 0.90,
-      "suggest": ["com.apple.mail", "com.google.Gmail", "ch.protonmail.desktop"]
+      "suggest": ["com.apple.mail", "com.microsoft.Outlook", "com.google.Gmail"]
     }
   ]
 }
