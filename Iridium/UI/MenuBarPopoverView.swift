@@ -19,6 +19,8 @@ struct MenuBarPopoverView: View {
                 Toggle("", isOn: Bindable(coordinator.settings).isEnabled)
                     .toggleStyle(.switch)
                     .labelsHidden()
+                    .accessibilityIdentifier(AccessibilityID.MenuBar.enableToggle)
+                    .accessibilityLabel("Enable Iridium")
             }
             .onChange(of: coordinator.settings.isEnabled) { _, newValue in
                 if newValue {
@@ -34,10 +36,14 @@ struct MenuBarPopoverView: View {
                 Label("Active", systemImage: "circle.fill")
                     .foregroundStyle(.green)
                     .font(.callout)
+                    .accessibilityIdentifier(AccessibilityID.MenuBar.statusLabel)
+                    .accessibilityLabel("Iridium is active")
             } else {
                 Label("Paused", systemImage: "pause.circle")
                     .foregroundStyle(.secondary)
                     .font(.callout)
+                    .accessibilityIdentifier(AccessibilityID.MenuBar.statusLabel)
+                    .accessibilityLabel("Iridium is paused")
             }
 
             if coordinator.settings.enableTaskMode {
@@ -57,6 +63,7 @@ struct MenuBarPopoverView: View {
             Button("Quit Iridium") {
                 NSApp.terminate(nil)
             }
+            .accessibilityIdentifier(AccessibilityID.MenuBar.quitButton)
         }
         .padding()
         .frame(width: 280)

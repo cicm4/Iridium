@@ -35,6 +35,11 @@ struct SettingsView: View {
                     Label("Layouts", systemImage: "rectangle.split.3x3")
                 }
 
+            ShortcutsSettingsView()
+                .tabItem {
+                    Label("Shortcuts", systemImage: "keyboard")
+                }
+
             AboutView()
                 .tabItem {
                     Label("About", systemImage: "info.circle")

@@ -22,6 +22,8 @@ struct SuggestionPanelView: View {
             }
             .padding(.horizontal, 12)
             .padding(.top, 8)
+            .accessibilityIdentifier(AccessibilityID.SuggestionPanel.header)
+            .accessibilityLabel(viewModel.isSearching ? "Search mode" : "\(viewModel.displayedSuggestions.count) suggestions")
 
             // Search bar — visible when user starts typing
             if viewModel.isSearching {
@@ -56,6 +58,7 @@ struct SuggestionPanelView: View {
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
+                    .accessibilityIdentifier(AccessibilityID.SuggestionPanel.noResults)
             } else {
                 ForEach(Array(displayed.enumerated()), id: \.element.id) { index, suggestion in
                     SuggestionRowView(
@@ -97,6 +100,8 @@ struct SuggestionPanelView: View {
                 .strokeBorder(.separator, lineWidth: 0.5)
         )
         .shadow(color: .black.opacity(0.2), radius: 16, y: 8)
+        .accessibilityIdentifier(AccessibilityID.SuggestionPanel.panel)
+        .accessibilityElement(children: .contain)
         .onKeyPress(.upArrow) {
             viewModel.moveSelectionUp()
             return .handled

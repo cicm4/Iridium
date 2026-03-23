@@ -6,6 +6,8 @@
 import SwiftUI
 
 struct AboutView: View {
+    @Environment(AppCoordinator.self) private var coordinator
+
     var body: some View {
         VStack(spacing: 16) {
             Image(systemName: "sparkle")
@@ -35,6 +37,24 @@ struct AboutView: View {
             }
             .font(.callout)
             .foregroundStyle(.secondary)
+
+            Divider()
+
+            HStack(spacing: 12) {
+                Button("Export Settings...") {
+                    SettingsExporter.export(
+                        settings: coordinator.settings,
+                        appPreferences: coordinator.appPreferences
+                    )
+                }
+
+                Button("Import Settings...") {
+                    SettingsImporter.importSettings(
+                        to: coordinator.settings,
+                        appPreferences: coordinator.appPreferences
+                    )
+                }
+            }
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

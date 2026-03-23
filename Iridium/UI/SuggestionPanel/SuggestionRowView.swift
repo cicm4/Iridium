@@ -58,5 +58,20 @@ struct SuggestionRowView: View {
         .padding(.vertical, isPrimary ? 10 : 6)
         .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
         .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityDescription)
+        .accessibilityHint(isPrimary ? "Press Return to open" : "Press Command \(suggestion.shortcutIndex) to open")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+
+    private var accessibilityDescription: String {
+        var parts = [suggestion.name]
+        if suggestion.confidence > 0 {
+            parts.append("\(Int(suggestion.confidence * 100)) percent confidence")
+        }
+        if let hint = suggestion.contextHint {
+            parts.append(hint)
+        }
+        return parts.joined(separator: ", ")
     }
 }
