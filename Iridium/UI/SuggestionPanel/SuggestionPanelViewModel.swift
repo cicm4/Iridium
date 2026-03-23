@@ -14,6 +14,28 @@ final class SuggestionPanelViewModel {
     var selectedIndex: Int = 0
     var isVisible = false
 
+    /// Current search query — when non-empty, panel shows search results instead of suggestions.
+    var searchQuery: String = "" {
+        didSet {
+            selectedIndex = 0
+            if isSearching {
+                // Cancel auto-dismiss while user is searching
+                autoDismissTask?.cancel()
+            }
+        }
+    }
+
+    /// Search results populated by performSearch().
+    var searchResults: [ResolvedSuggestion] = []
+
+    /// Whether the panel is in search mode.
+    var isSearching: Bool { !searchQuery.isEmpty }
+
+    /// The suggestions currently displayed — either search results or original suggestions.
+    var displayedSuggestions: [ResolvedSuggestion] {
+        isSearching ? searchResults : suggestions
+    }
+
     private var autoDismissTask: Task<Void, Never>?
     private var onSelection: ((String) -> Void)?
     private var onDismissal: (() -> Void)?
@@ -65,36 +87,91 @@ final class SuggestionPanelViewModel {
         guard isVisible else { return }
         isVisible = false
         suggestions = []
+        searchQuery = ""
+        searchResults = []
         autoDismissTask?.cancel()
         onDismissal?()
     }
 
     func selectCurrent() {
-        guard !suggestions.isEmpty, selectedIndex >= 0, selectedIndex < suggestions.count else { return }
-        let suggestion = suggestions[selectedIndex]
+        let displayed = displayedSuggestions
+        guard !displayed.isEmpty, selectedIndex >= 0, selectedIndex < displayed.count else { return }
+        let suggestion = displayed[selectedIndex]
         AppLauncher.launch(bundleID: suggestion.bundleID)
         onSelection?(suggestion.bundleID)
         // Selection dismisses the panel but does NOT count as a dismissal
         isVisible = false
         suggestions = []
+        searchQuery = ""
+        searchResults = []
         autoDismissTask?.cancel()
     }
 
     /// Called when the user clicks a specific suggestion row.
     func selectAtIndex(_ index: Int) {
-        guard index >= 0, index < suggestions.count else { return }
+        let displayed = displayedSuggestions
+        guard index >= 0, index < displayed.count else { return }
         selectedIndex = index
         selectCurrent()
     }
 
     func moveSelectionUp() {
-        guard !suggestions.isEmpty else { return }
+        let displayed = displayedSuggestions
+        guard !displayed.isEmpty else { return }
         selectedIndex = max(0, selectedIndex - 1)
     }
 
     func moveSelectionDown() {
-        guard !suggestions.isEmpty else { return }
-        selectedIndex = min(suggestions.count - 1, selectedIndex + 1)
+        let displayed = displayedSuggestions
+        guard !displayed.isEmpty else { return }
+        selectedIndex = min(displayed.count - 1, selectedIndex + 1)
+    }
+
+    // MARK: - Search
+
+    /// Appends a character to the search query.
+    func appendToSearch(_ char: String) {
+        searchQuery += char
+    }
+
+    /// Removes the last character from the search query.
+    func backspaceSearch() {
+        guard !searchQuery.isEmpty else { return }
+        searchQuery.removeLast()
+    }
+
+    /// Searches installed apps by name and populates searchResults.
+    func performSearch(query: String, using registry: InstalledAppRegistry) {
+        guard !query.isEmpty else {
+            searchResults = []
+            return
+        }
+
+        let lowered = query.lowercased()
+        let matches = registry.apps.values
+            .filter { $0.name.lowercased().contains(lowered) }
+            .sorted { a, b in
+                // Prefix matches first, then alphabetical
+                let aPrefix = a.name.lowercased().hasPrefix(lowered)
+                let bPrefix = b.name.lowercased().hasPrefix(lowered)
+                if aPrefix != bPrefix { return aPrefix }
+                return a.name < b.name
+            }
+            .prefix(10)
+
+        searchResults = matches.enumerated().map { index, app in
+            ResolvedSuggestion(
+                id: "search:\(app.bundleID)",
+                bundleID: app.bundleID,
+                name: app.name,
+                icon: BundleIDResolver.icon(for: app.bundleID),
+                confidence: 0,
+                shortcutIndex: index + 1,
+                contextHint: nil
+            )
+        }
+
+        selectedIndex = 0
     }
 
     private func scheduleAutoDismiss(delay: TimeInterval) {
