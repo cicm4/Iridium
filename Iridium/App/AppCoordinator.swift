@@ -38,8 +38,15 @@ final class AppCoordinator {
         accessibilityManager.checkPermission()
 
         // Load packs
-        packRegistry.enabledPackIDs = settings.enabledPackIDs
         packRegistry.loadAll()
+
+        // On first launch, enabledPackIDs is empty — auto-enable all built-in packs
+        if settings.enabledPackIDs.isEmpty && !packRegistry.packs.isEmpty {
+            let builtInIDs = Set(packRegistry.packs.map(\.id))
+            settings.enabledPackIDs = builtInIDs
+            Logger.app.info("First launch: auto-enabled \(builtInIDs.count) built-in packs")
+        }
+        packRegistry.enabledPackIDs = settings.enabledPackIDs
 
         // Configure prediction engine
         predictionEngine.configure(packRegistry: packRegistry, settings: settings)
