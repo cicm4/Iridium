@@ -23,18 +23,20 @@ struct PatternMatcher: Sendable {
             return Result(contentType: .email, language: nil, confidence: 0.90)
         }
 
-        // Check code patterns
+        // Check code patterns — language-specific detection (high confidence)
         if let language = detectCodeLanguage(sample) {
             return Result(contentType: .code, language: language, confidence: 0.85)
         }
 
         // Check if it looks like code generically
+        // Use 0.85 confidence — strong enough to beat Tier 2 NL classifier
+        // which may mistake code for prose
         if looksLikeCode(sample) {
-            return Result(contentType: .code, language: .unknown, confidence: 0.70)
+            return Result(contentType: .code, language: .unknown, confidence: 0.85)
         }
 
-        // Default to prose if it's mostly text
-        if sample.count > 10 {
+        // Default to prose if it's mostly natural language text
+        if sample.count > 10 && looksLikeProse(sample) {
             return Result(contentType: .prose, language: nil, confidence: 0.50)
         }
 
@@ -67,8 +69,10 @@ struct PatternMatcher: Sendable {
 
     func detectCodeLanguage(_ text: String) -> ProgrammingLanguage? {
         let scores = languageScores(text)
+        // Threshold of 2 (was 3) so even short snippets with a single strong
+        // keyword (scored at 2) are detected as code.
         guard let best = scores.max(by: { $0.value < $1.value }),
-              best.value >= 3
+              best.value >= 2
         else {
             return nil
         }
@@ -86,18 +90,25 @@ struct PatternMatcher: Sendable {
             // Swift (exclude "let mut" which is Rust)
             if trimmed.hasPrefix("func ") || (trimmed.hasPrefix("let ") && !trimmed.hasPrefix("let mut "))
                 || trimmed.hasPrefix("var ")
-                || trimmed.hasPrefix("guard ") || trimmed.hasPrefix("import Swift")
+                || trimmed.hasPrefix("guard ") || trimmed.hasPrefix("import Swift") || trimmed.hasPrefix("import Foundation")
+                || trimmed.hasPrefix("import UIKit") || trimmed.hasPrefix("import AppKit")
+                || trimmed.hasPrefix("import SwiftUI") || trimmed.hasPrefix("import Combine")
                 || (trimmed.contains("-> ") && !trimmed.contains("fn ")) || trimmed.hasPrefix("struct ")
                 || trimmed.hasPrefix("@Observable") || trimmed.hasPrefix("@MainActor")
+                || trimmed.hasPrefix("@State") || trimmed.hasPrefix("@Binding")
+                || trimmed.contains("try await ") || trimmed.contains("async throws")
             {
                 scores[.swift, default: 0] += 2
             }
 
             // Python
             if trimmed.hasPrefix("def ") || trimmed.hasPrefix("import ") || trimmed.hasPrefix("from ")
-                || trimmed.hasPrefix("class ") && trimmed.hasSuffix(":")
+                || (trimmed.hasPrefix("class ") && trimmed.hasSuffix(":"))
                 || trimmed.hasPrefix("elif ") || trimmed.hasPrefix("print(")
-                || trimmed.contains("self.")
+                || trimmed.contains("self.") || trimmed.hasPrefix("return ")
+                || trimmed.hasPrefix("for ") && trimmed.contains(" in ") && trimmed.hasSuffix(":")
+                || trimmed.hasPrefix("if ") && trimmed.hasSuffix(":")
+                || trimmed.hasPrefix("async def ") || trimmed.hasPrefix("await ")
             {
                 scores[.python, default: 0] += 2
             }
@@ -106,6 +117,8 @@ struct PatternMatcher: Sendable {
             if trimmed.hasPrefix("const ") || trimmed.hasPrefix("function ")
                 || trimmed.contains("=>") || trimmed.contains("console.log")
                 || trimmed.hasPrefix("export ") || trimmed.hasPrefix("require(")
+                || trimmed.contains(".then(") || trimmed.contains(".catch(")
+                || trimmed.hasPrefix("async ") || trimmed.contains("await ")
             {
                 scores[.javascript, default: 0] += 2
             }
@@ -126,7 +139,9 @@ struct PatternMatcher: Sendable {
             // Rust
             if trimmed.hasPrefix("fn ") || trimmed.hasPrefix("let mut ")
                 || trimmed.contains("pub fn") || trimmed.contains("impl ")
-                || trimmed.contains("::") && trimmed.contains("fn")
+                || (trimmed.contains("::") && trimmed.contains("fn"))
+                || trimmed.contains("Vec<") || trimmed.contains("Vec::new")
+                || trimmed.contains(": &") || trimmed.contains("-> Result<")
             {
                 scores[.rust, default: 0] += 2
             }
@@ -139,7 +154,7 @@ struct PatternMatcher: Sendable {
             }
 
             // Ruby
-            if trimmed.hasPrefix("def ") && trimmed.hasSuffix(")")
+            if (trimmed.hasPrefix("def ") && trimmed.hasSuffix(")"))
                 || trimmed.hasPrefix("end") || trimmed.contains("puts ")
                 || trimmed.hasPrefix("require ")
             {
@@ -182,7 +197,7 @@ struct PatternMatcher: Sendable {
 
             // Shell
             if trimmed.hasPrefix("#!/bin/") || trimmed.hasPrefix("echo ")
-                || trimmed.hasPrefix("export ") && trimmed.contains("=")
+                || (trimmed.hasPrefix("export ") && trimmed.contains("="))
                 || trimmed.hasPrefix("if [")
             {
                 scores[.shell, default: 0] += 2
@@ -195,11 +210,51 @@ struct PatternMatcher: Sendable {
     // MARK: - Generic Code Detection
 
     private func looksLikeCode(_ text: String) -> Bool {
-        let codeIndicators = ["{", "}", "()", ";", "//", "/*", "*/", "->", "=>", "!=", "=="]
+        // Strong single indicators that almost certainly mean code
+        let strongIndicators = ["func ", "def ", "class ", "const ", "var ", "let ",
+                                "import ", "return ", "if (", "for (", "while (",
+                                "switch ", "case ", "break;", "continue;",
+                                "public ", "private ", "static ", "void ",
+                                "async ", "await ", "throw ", "catch ",
+                                "println", "printf", "console.", "System."]
+        for indicator in strongIndicators {
+            if text.contains(indicator) { return true }
+        }
+
+        // Structural indicators — need 2+ of these
+        let structuralIndicators = ["{", "}", "()", ";", "//", "/*", "*/",
+                                     "->", "=>", "!=", "==", "&&", "||",
+                                     "+=", "-=", ">=", "<=", "::", "[]"]
         var count = 0
-        for indicator in codeIndicators {
+        for indicator in structuralIndicators {
             if text.contains(indicator) { count += 1 }
         }
-        return count >= 3
+        return count >= 2
+    }
+
+    // MARK: - Prose Detection
+
+    /// Returns true if the text looks like natural language prose.
+    /// Checks that the text is mostly words without code-like syntax.
+    private func looksLikeProse(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // If it looks like code, it's not prose
+        if looksLikeCode(trimmed) { return true == false }
+
+        // Count word-like tokens vs symbol-heavy tokens
+        let words = trimmed.split(separator: " ")
+        guard words.count >= 3 else { return false }
+
+        // Prose typically has longer words with no special chars
+        let normalWords = words.filter { word in
+            let str = String(word)
+            // A "normal" word has mostly letters
+            let letterCount = str.filter(\.isLetter).count
+            return letterCount > str.count / 2
+        }
+
+        // If > 70% of words look like normal English words, it's prose
+        return Double(normalWords.count) / Double(words.count) > 0.70
     }
 }
