@@ -44,9 +44,16 @@ final class AppCoordinator {
         panelViewModel.configure(
             onSelection: { [weak self] bundleID in
                 self?.predictionEngine.interactionTracker.recordSelection(bundleID: bundleID)
+                self?.hidePanel()
             },
             onDismissal: { [weak self] in
+                // Explicit dismissal (Escape, click outside) counts toward suppression
                 self?.predictionEngine.interactionTracker.recordDismissal()
+                self?.hidePanel()
+            },
+            onAutoDismiss: { [weak self] in
+                // Auto-dismiss does NOT count toward suppression —
+                // the user simply didn't need the suggestion
                 self?.hidePanel()
             }
         )
@@ -123,6 +130,9 @@ final class AppCoordinator {
                     .environment(panelViewModel)
             )
             window.contentView = hostingView
+
+            // Wire up the view model for keyboard event forwarding
+            window.panelViewModel = panelViewModel
 
             // Dismiss panel when user clicks outside
             window.onClickOutside = { [weak self] in
