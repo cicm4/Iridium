@@ -240,7 +240,7 @@ struct PatternMatcher: Sendable {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
 
         // If it looks like code, it's not prose
-        if looksLikeCode(trimmed) { return true == false }
+        if looksLikeCode(trimmed) { return false }
 
         // Count word-like tokens vs symbol-heavy tokens
         let words = trimmed.split(separator: " ")

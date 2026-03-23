@@ -18,6 +18,7 @@ final class AppCoordinator {
     let panelViewModel = SuggestionPanelViewModel()
     let accessibilityManager = AccessibilityManager()
     let windowManager = WindowManager()
+    let appPreferences = AppPreferences()
 
     private var signalCollector: SignalCollector?
     private var signalProcessingTask: Task<Void, Never>?
@@ -42,6 +43,7 @@ final class AppCoordinator {
 
         // Configure prediction engine
         predictionEngine.configure(packRegistry: packRegistry, settings: settings)
+        predictionEngine.appPreferences = appPreferences
 
         // Configure panel
         panelViewModel.configure(

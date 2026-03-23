@@ -14,6 +14,9 @@ struct SuggestionRanker: Sendable {
     /// but not so large that it overrides a significantly better match.
     static let runningAppBoost: Double = 0.10
 
+    /// Boost applied to suggestions whose app is pinned by the user.
+    static let pinnedAppBoost: Double = 0.25
+
     /// Ranks, deduplicates, and caps suggestions.
     /// - Parameters:
     ///   - suggestions: Raw suggestions from pack evaluation.
@@ -21,17 +24,24 @@ struct SuggestionRanker: Sendable {
     ///   - interactionTracker: Tracks user selections for interaction boost.
     ///   - runningAppBundleIDs: Bundle IDs of currently running apps. Running apps
     ///     receive a ranking boost so the most relevant, already-open apps surface first.
+    ///   - excludedBundleIDs: Bundle IDs the user has explicitly excluded from suggestions.
+    ///   - pinnedBundleIDs: Bundle IDs the user has pinned to appear first.
     func rank(
         suggestions: [Suggestion],
         signalTimestamp: ContinuousClock.Instant,
         interactionTracker: InteractionTracker,
-        runningAppBundleIDs: Set<String> = []
+        runningAppBundleIDs: Set<String> = [],
+        excludedBundleIDs: Set<String> = [],
+        pinnedBundleIDs: Set<String> = []
     ) -> [Suggestion] {
         let now = ContinuousClock.now
         let signalAge = now - signalTimestamp
 
+        // Filter excluded apps FIRST
+        let nonExcluded = suggestions.filter { !excludedBundleIDs.contains($0.bundleID) }
+
         // Score each suggestion
-        var scored: [(Suggestion, Double)] = suggestions.map { suggestion in
+        var scored: [(Suggestion, Double)] = nonExcluded.map { suggestion in
             let interactionBoost = interactionTracker.boostForBundleID(suggestion.bundleID)
             var score = scorer.score(
                 suggestion: suggestion,
@@ -42,6 +52,11 @@ struct SuggestionRanker: Sendable {
             // Boost currently running apps
             if runningAppBundleIDs.contains(suggestion.bundleID) {
                 score += Self.runningAppBoost
+            }
+
+            // Boost pinned apps
+            if pinnedBundleIDs.contains(suggestion.bundleID) {
+                score += Self.pinnedAppBoost
             }
 
             return (suggestion, score)
