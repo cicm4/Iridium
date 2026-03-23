@@ -25,6 +25,9 @@ struct ContextSignal: Sendable {
     let browserTabTitle: String?
     let clipboardPatternHint: String?
 
+    // Phase 5: Integration signals (namespace.key → value)
+    let integrationSignals: [String: String]?
+
     init(
         clipboardUTI: String? = nil,
         clipboardSample: String? = nil,
@@ -41,7 +44,8 @@ struct ContextSignal: Sendable {
         upcomingMeetingInMinutes: Int? = nil,
         browserDomain: String? = nil,
         browserTabTitle: String? = nil,
-        clipboardPatternHint: String? = nil
+        clipboardPatternHint: String? = nil,
+        integrationSignals: [String: String]? = nil
     ) {
         self.clipboardUTI = clipboardUTI
         self.clipboardSample = clipboardSample
@@ -59,6 +63,7 @@ struct ContextSignal: Sendable {
         self.browserDomain = browserDomain
         self.browserTabTitle = browserTabTitle
         self.clipboardPatternHint = clipboardPatternHint
+        self.integrationSignals = integrationSignals
     }
 
     /// Maximum bytes read from clipboard content for classification.

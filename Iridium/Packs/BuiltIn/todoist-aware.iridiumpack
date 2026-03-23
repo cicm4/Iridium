@@ -1,0 +1,21 @@
+{
+  "id": "com.iridium.todoist-aware",
+  "name": "Todoist Aware",
+  "version": "1.0.0",
+  "author": "Iridium",
+  "description": "Suggests task management apps when Todoist reports overdue or due tasks",
+  "triggers": [
+    {
+      "signal": "todoist.overdue",
+      "matches": { "gte": 1 },
+      "confidence": 0.85,
+      "suggest": ["com.todoist.mac.Todoist", "com.culturedcode.ThingsMac", "com.omnigroup.OmniFocus4"]
+    },
+    {
+      "signal": "todoist.dueToday",
+      "matches": { "gte": 5 },
+      "confidence": 0.80,
+      "suggest": ["com.todoist.mac.Todoist", "com.apple.reminders", "com.culturedcode.ThingsMac"]
+    }
+  ]
+}

@@ -73,6 +73,14 @@ struct TriggerMatcher: Sendable {
         case "clipboard.pattern":
             return context.clipboardPatternHint.map { .string($0) }
         default:
+            // Phase 5: Integration signals (e.g., "todoist.dueToday", "obsidian.recentTopic")
+            if let value = context.integrationSignals?[signal] {
+                // Try to parse as number first
+                if let num = Double(value) {
+                    return .number(num)
+                }
+                return .string(value)
+            }
             return nil
         }
     }

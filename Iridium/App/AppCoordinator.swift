@@ -25,6 +25,7 @@ final class AppCoordinator {
     let workspaceStore = WorkspaceStore()
     let workspaceActivator = WorkspaceActivator()
     let workspaceLearner = WorkspaceLearner()
+    let integrationRegistry = IntegrationRegistry()
 
     nonisolated init() {
         let persistence = LearningDataPersistence()
@@ -87,6 +88,17 @@ final class AppCoordinator {
 
         // Load workspaces
         workspaceStore.load()
+
+        // Register and start integrations
+        integrationRegistry.register(TodoistIntegration())
+        integrationRegistry.register(ObsidianIntegration())
+        integrationRegistry.register(NotionIntegration())
+        if let enabledIDs = settings.defaults.stringArray(forKey: "enabledIntegrationIDs") {
+            integrationRegistry.enabledIDs = Set(enabledIDs)
+        }
+        Task {
+            await integrationRegistry.startAll()
+        }
 
         // Configure panel
         panelViewModel.configure(
@@ -155,6 +167,7 @@ final class AppCoordinator {
         panelViewModel.dismiss()
         hidePanel()
         installedAppRegistry.stopObservingLaunches()
+        Task { await integrationRegistry.stopAll() }
 
         signalProcessingTask = nil
         resultProcessingTask = nil

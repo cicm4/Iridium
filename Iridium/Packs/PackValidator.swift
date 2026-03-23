@@ -28,6 +28,18 @@ struct PackValidator: Sendable {
         "clipboard.pattern",
     ]
 
+    /// Known integration namespaces. Integration signals follow the pattern "namespace.key".
+    private static let knownIntegrationNamespaces: Set<String> = [
+        "todoist", "obsidian", "notion",
+    ]
+
+    /// Checks if a signal name is a valid integration signal (namespace.key format).
+    private static func isIntegrationSignal(_ signal: String) -> Bool {
+        let parts = signal.split(separator: ".", maxSplits: 1)
+        guard parts.count == 2 else { return false }
+        return knownIntegrationNamespaces.contains(String(parts[0]))
+    }
+
     func validate(_ manifest: PackManifest) throws {
         // Validate ID is reverse-DNS style
         guard manifest.id.contains("."), manifest.id.count >= 3 else {
@@ -70,14 +82,14 @@ struct PackValidator: Sendable {
 
         // Validate signal names
         if let signal = trigger.signal {
-            guard Self.knownSignals.contains(signal) else {
+            guard Self.knownSignals.contains(signal) || Self.isIntegrationSignal(signal) else {
                 throw PackValidationError(message: "Trigger[\(index)]: unknown signal '\(signal)'")
             }
         }
 
         if let conditions = trigger.conditions {
             for (ci, condition) in conditions.enumerated() {
-                guard Self.knownSignals.contains(condition.signal) else {
+                guard Self.knownSignals.contains(condition.signal) || Self.isIntegrationSignal(condition.signal) else {
                     throw PackValidationError(message: "Trigger[\(index)].conditions[\(ci)]: unknown signal '\(condition.signal)'")
                 }
             }
@@ -85,6 +97,7 @@ struct PackValidator: Sendable {
 
         // Must have either signal+matches or conditions
         if trigger.signal == nil && trigger.conditions == nil {
+
             throw PackValidationError(message: "Trigger[\(index)]: must have either 'signal'+'matches' or 'conditions'")
         }
     }

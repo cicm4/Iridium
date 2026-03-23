@@ -28,7 +28,8 @@ struct SignalFusion: Sendable {
             upcomingMeetingInMinutes: signal.upcomingMeetingInMinutes,
             browserDomain: signal.browserDomain,
             browserTabTitle: signal.browserTabTitle,
-            clipboardPatternHint: signal.clipboardPatternHint
+            clipboardPatternHint: signal.clipboardPatternHint,
+            integrationSignals: signal.integrationSignals
         )
     }
 }
